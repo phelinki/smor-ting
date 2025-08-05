@@ -1,4 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../../core/models/user.dart';
+import '../../../../core/services/api_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -13,48 +15,89 @@ class AuthNotifier extends _$AuthNotifier {
     state = const AuthState.loading();
     
     try {
-      // TODO: Implement actual login logic
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      final apiService = ref.read(apiServiceProvider);
+      final request = LoginRequest(email: email, password: password);
+      final response = await apiService.login(request);
       
-      // For now, just simulate successful login
-      state = AuthState.authenticated(
-        User(
-          id: '1',
-          email: email,
-          name: 'Test User',
-          phone: '+231123456789',
-          userType: 'customer',
-        ),
-      );
+      if (response.requiresOTP) {
+        state = AuthState.requiresOTP(email: email, user: response.user);
+      } else {
+        apiService.setAuthToken(response.accessToken!);
+        state = AuthState.authenticated(response.user, response.accessToken!);
+      }
     } catch (e) {
       state = AuthState.error(e.toString());
     }
   }
 
-  Future<void> register(String name, String email, String phone, String password) async {
+  Future<void> register({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  }) async {
     state = const AuthState.loading();
     
     try {
-      // TODO: Implement actual registration logic
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-      
-      // For now, just simulate successful registration
-      state = AuthState.authenticated(
-        User(
-          id: '1',
-          email: email,
-          name: name,
-          phone: phone,
-          userType: 'customer',
-        ),
+      final apiService = ref.read(apiServiceProvider);
+      final request = RegisterRequest(
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        role: role,
       );
+      
+      final response = await apiService.register(request);
+      
+      if (response.requiresOTP) {
+        state = AuthState.requiresOTP(email: email, user: response.user);
+      } else {
+        apiService.setAuthToken(response.accessToken!);
+        state = AuthState.authenticated(response.user, response.accessToken!);
+      }
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
+  }
+
+  Future<void> verifyOTP(String email, String otp) async {
+    state = const AuthState.loading();
+    
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final request = VerifyOTPRequest(email: email, otp: otp);
+      final response = await apiService.verifyOTP(request);
+      
+      apiService.setAuthToken(response.accessToken!);
+      state = AuthState.authenticated(response.user, response.accessToken!);
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
+  }
+
+  Future<void> resendOTP(String email) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.resendOTP(email);
     } catch (e) {
       state = AuthState.error(e.toString());
     }
   }
 
   void logout() {
+    final apiService = ref.read(apiServiceProvider);
+    apiService.clearAuthToken();
     state = const AuthState.initial();
+  }
+
+  void clearError() {
+    if (state is _Error) {
+      state = const AuthState.initial();
+    }
   }
 }
 
@@ -62,71 +105,36 @@ class AuthNotifier extends _$AuthNotifier {
 sealed class AuthState {
   const AuthState();
 
-  const factory AuthState.initial() = Initial;
-  const factory AuthState.loading() = Loading;
-  factory AuthState.authenticated(User user) = Authenticated;
-  const factory AuthState.error(String message) = Error;
+  const factory AuthState.initial() = _Initial;
+  const factory AuthState.loading() = _Loading;
+  const factory AuthState.authenticated(User user, String accessToken) = _Authenticated;
+  const factory AuthState.requiresOTP({required String email, required User user}) = _RequiresOTP;
+  const factory AuthState.error(String message) = _Error;
 }
 
-class Initial extends AuthState {
-  const Initial();
+class _Initial extends AuthState {
+  const _Initial();
 }
 
-class Loading extends AuthState {
-  const Loading();
+class _Loading extends AuthState {
+  const _Loading();
 }
 
-class Authenticated extends AuthState {
+class _Authenticated extends AuthState {
   final User user;
-  Authenticated(this.user);
+  final String accessToken;
+  const _Authenticated(this.user, this.accessToken);
 }
 
-class Error extends AuthState {
-  final String message;
-  const Error(this.message);
-}
-
-// User Model
-class User {
-  final String id;
+class _RequiresOTP extends AuthState {
   final String email;
-  final String name;
-  final String phone;
-  final String userType;
-  final String? profileImage;
-  final bool isVerified;
-  final DateTime createdAt;
+  final User user;
+  const _RequiresOTP({required this.email, required this.user});
+}
 
-  User({
-    required this.id,
-    required this.email,
-    required this.name,
-    required this.phone,
-    required this.userType,
-    this.profileImage,
-    this.isVerified = false,
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime(2024, 1, 1);
+class _Error extends AuthState {
+  final String message;
+  const _Error(this.message);
+}
 
-  User copyWith({
-    String? id,
-    String? email,
-    String? name,
-    String? phone,
-    String? userType,
-    String? profileImage,
-    bool? isVerified,
-    DateTime? createdAt,
-  }) {
-    return User(
-      id: id ?? this.id,
-      email: email ?? this.email,
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      userType: userType ?? this.userType,
-      profileImage: profileImage ?? this.profileImage,
-      isVerified: isVerified ?? this.isVerified,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-} 
+

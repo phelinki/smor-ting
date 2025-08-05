@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/models/user.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
+import 'otp_verification_page.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -46,11 +48,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     });
 
     try {
+      // Split the full name into first and last name
+      final fullName = _nameController.text.trim();
+      final nameParts = fullName.split(' ');
+      final firstName = nameParts.first;
+      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+      
       await ref.read(authNotifierProvider.notifier).register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _phoneController.text.trim(),
-        _passwordController.text,
+        firstName: firstName,
+        lastName: lastName,
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text,
+        role: _selectedUserType == AppConstants.userTypeProvider ? UserRole.provider : UserRole.customer,
       );
     } finally {
       if (mounted) {
@@ -90,6 +100,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+
+    // Listen to auth state changes
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next is _Authenticated) {
+        context.go('/home');
+      } else if (next is _RequiresOTP) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => OTPVerificationPage(
+              email: next.email,
+              userFullName: next.user.fullName,
+            ),
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppTheme.white,

@@ -4,12 +4,19 @@ import 'package:go_router/go_router.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../auth/presentation/pages/login_page.dart';
 import '../../auth/presentation/pages/register_page.dart';
-import '../../auth/presentation/pages/phone_verification_page.dart';
+import '../../auth/presentation/pages/otp_verification_page.dart';
 import '../../home/presentation/pages/home_page.dart';
 import '../../splash/presentation/pages/splash_page.dart';
 import '../../splash/presentation/pages/onboarding_page.dart';
+import '../../services/presentation/pages/service_categories_page.dart';
+import '../../services/presentation/pages/services_list_page.dart';
 import '../../services/presentation/pages/service_listings_page.dart';
 import '../../services/presentation/pages/provider_profile_page.dart';
+import '../../profile/presentation/pages/profile_page.dart';
+import '../../settings/presentation/pages/settings_page.dart';
+import '../../help/presentation/pages/help_page.dart';
+import '../../about/presentation/pages/about_page.dart';
+import '../../../core/models/service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authNotifierProvider);
@@ -17,10 +24,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      final isAuthenticated = authState is Authenticated;
+      final isAuthenticated = authState is _Authenticated;
       final isAuthRoute = state.matchedLocation == '/login' || 
                          state.matchedLocation == '/register' ||
-                         state.matchedLocation == '/phone-verification' ||
+                         state.matchedLocation == '/verify-otp' ||
                          state.matchedLocation == '/onboarding';
       
       // If not authenticated and not on auth route, redirect to login
@@ -53,8 +60,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(
-        path: '/phone-verification',
-        builder: (context, state) => const PhoneVerificationPage(),
+        path: '/verify-otp',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          final fullName = state.uri.queryParameters['fullName'] ?? '';
+          return OTPVerificationPage(
+            email: email,
+            userFullName: fullName,
+          );
+        },
       ),
       GoRoute(
         path: '/home',
@@ -73,6 +87,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final providerId = state.pathParameters['providerId']!;
           return ProviderProfilePage(providerId: providerId);
         },
+      ),
+      GoRoute(
+        path: '/services',
+        builder: (context, state) => const ServiceCategoriesPage(),
+      ),
+      GoRoute(
+        path: '/services/:categoryId',
+        builder: (context, state) {
+          final categoryId = state.pathParameters['categoryId']!;
+          // You'll need to pass the actual category object here
+          // For now, creating a mock category
+          final category = ServiceCategory(
+            id: categoryId,
+            name: 'Services',
+            description: 'Service category',
+            icon: 'build',
+            color: '#2196F3',
+            isActive: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          return ServicesListPage(category: category);
+        },
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: '/help',
+        builder: (context, state) => const HelpPage(),
+      ),
+      GoRoute(
+        path: '/about',
+        builder: (context, state) => const AboutPage(),
       ),
     ],
   );

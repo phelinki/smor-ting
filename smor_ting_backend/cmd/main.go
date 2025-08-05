@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+<<<<<<< HEAD
 	"github.com/smorting/backend/configs"
 	"github.com/smorting/backend/internal/auth"
 	"github.com/smorting/backend/pkg/database"
@@ -115,6 +116,26 @@ func (a *App) initializeAuthHandler() error {
 // initializeServer initializes the Fiber server
 func (a *App) initializeServer() error {
 	// Create Fiber app with configuration
+=======
+	"github.com/smorting/backend/internal/database"
+	"github.com/smorting/backend/internal/handlers"
+	"github.com/smorting/backend/internal/services"
+)
+
+func main() {
+	// Initialize in-memory database
+	db := database.NewMemoryDatabase()
+	defer db.Close()
+
+	// Initialize services
+	emailService := services.NewEmailService()
+	authService := services.NewAuthService(db, emailService)
+
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(authService)
+
+	// Create new Fiber app
+>>>>>>> origin/cursor/check-previous-ask-status-7bc9
 	app := fiber.New(fiber.Config{
 		AppName:      "Smor-Ting Backend",
 		ReadTimeout:  a.config.Server.ReadTimeout,
@@ -187,6 +208,8 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.AuthMiddlew
 	auth.Post("/register", a.authHdl.Register)
 	auth.Post("/login", a.authHdl.Login)
 	auth.Post("/validate", a.authHdl.ValidateToken)
+	auth.Post("/verify-otp", a.authHdl.VerifyOTP)
+	auth.Post("/resend-otp", a.authHdl.ResendOTP)
 
 	// Protected routes (authentication required)
 	protected := api.Group("/")
@@ -242,6 +265,8 @@ func (a *App) apiDocs(c *fiber.Ctx) error {
 				"register": "POST /api/v1/auth/register",
 				"login":    "POST /api/v1/auth/login",
 				"validate": "POST /api/v1/auth/validate",
+				"verify-otp": "POST /api/v1/auth/verify-otp",
+				"resend-otp": "POST /api/v1/auth/resend-otp",
 			},
 			"users": fiber.Map{
 				"profile": "GET /api/v1/users/profile",
