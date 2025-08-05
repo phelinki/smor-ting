@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../auth/presentation/pages/login_page.dart';
 import '../../auth/presentation/pages/register_page.dart';
+import '../../auth/presentation/pages/otp_verification_page.dart';
 import '../../home/presentation/pages/home_page.dart';
 import '../../splash/presentation/pages/splash_page.dart';
 
@@ -41,6 +42,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/verify-otp',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          final fullName = state.uri.queryParameters['fullName'] ?? '';
+          return OTPVerificationPage(
+            email: email,
+            userFullName: fullName,
+          );
+        },
       ),
       GoRoute(
         path: '/home',

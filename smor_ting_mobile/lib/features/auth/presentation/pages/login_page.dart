@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
+import 'otp_verification_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -52,6 +53,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+
+    // Listen to auth state changes
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next is _Authenticated) {
+        context.go('/home');
+      } else if (next is _RequiresOTP) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => OTPVerificationPage(
+              email: next.email,
+              userFullName: next.user.fullName,
+            ),
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppTheme.white,

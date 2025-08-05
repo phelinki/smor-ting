@@ -8,9 +8,23 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/smorting/backend/internal/database"
+	"github.com/smorting/backend/internal/handlers"
+	"github.com/smorting/backend/internal/services"
 )
 
 func main() {
+	// Initialize in-memory database
+	db := database.NewMemoryDatabase()
+	defer db.Close()
+
+	// Initialize services
+	emailService := services.NewEmailService()
+	authService := services.NewAuthService(db, emailService)
+
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(authService)
+
 	// Create new Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "Smor-Ting Backend",
@@ -48,12 +62,10 @@ func main() {
 	
 	// Auth routes
 	auth := api.Group("/auth")
-	auth.Post("/register", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"message": "Register endpoint"})
-	})
-	auth.Post("/login", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"message": "Login endpoint"})
-	})
+	auth.Post("/register", authHandler.Register)
+	auth.Post("/login", authHandler.Login)
+	auth.Post("/verify-otp", authHandler.VerifyOTP)
+	auth.Post("/resend-otp", authHandler.ResendOTP)
 
 	// Services routes
 	services := api.Group("/services")
