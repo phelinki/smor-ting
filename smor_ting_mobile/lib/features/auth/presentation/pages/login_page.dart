@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,19 +17,45 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
+  final _phoneController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _addressController = TextEditingController();
   bool _isLoading = false;
+  bool _showEmailLogin = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _phoneController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handlePhoneLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // TODO: Implement phone authentication
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      if (mounted) {
+        context.go('/phone-verification');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleEmailLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -37,8 +64,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     try {
       await ref.read(authNotifierProvider.notifier).login(
-        _emailController.text.trim(),
-        _passwordController.text,
+        _phoneController.text.trim(),
+        'password', // TODO: Add password field for email login
       );
     } finally {
       if (mounted) {
@@ -57,52 +84,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       backgroundColor: AppTheme.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
                 
-                // Logo and Title
+                // Header
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryRed,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primaryRed.withValues(alpha: 0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.build,
-                          color: AppTheme.white,
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
                       Text(
-                        'Welcome Back',
+                        'Welcome to Smor-Ting',
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.darkGray,
+                          color: AppTheme.secondaryBlue,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to your Smor-Ting account',
+                        'Connect with trusted service providers',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.gray,
+                          color: AppTheme.textSecondary,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -110,79 +117,139 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 
                 const SizedBox(height: 48),
                 
-                // Email Field
-                CustomTextField(
-                  controller: _emailController,
-                  labelText: 'Email',
-                  hintText: 'Enter your email',
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppConstants.requiredFieldMessage;
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return AppConstants.invalidEmailMessage;
-                    }
-                    return null;
-                  },
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Password Field
-                CustomTextField(
-                  controller: _passwordController,
-                  labelText: 'Password',
-                  hintText: 'Enter your password',
-                  obscureText: !_isPasswordVisible,
-                  prefixIcon: Icons.lock_outlined,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                      color: AppTheme.gray,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
+                if (!_showEmailLogin) ...[
+                  // Phone Number Field
+                  CustomTextField(
+                    controller: _phoneController,
+                    labelText: 'Phone Number',
+                    hintText: 'Enter your phone number',
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: Icons.phone_outlined,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppConstants.requiredFieldMessage;
+                      }
+                      if (value.length < 10) {
+                        return 'Please enter a valid phone number';
+                      }
+                      return null;
                     },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppConstants.requiredFieldMessage;
-                    }
-                    if (value.length < 8) {
-                      return AppConstants.passwordTooShortMessage;
-                    }
-                    return null;
-                  },
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Forgot Password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to forgot password
-                    },
-                    child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: AppTheme.primaryRed,
-                        fontWeight: FontWeight.w600,
+                  
+                  const SizedBox(height: 20),
+                  
+                  // First Name Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryRed,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextFormField(
+                      controller: _firstNameController,
+                      style: const TextStyle(color: AppTheme.white),
+                      decoration: const InputDecoration(
+                        labelText: 'First Name',
+                        labelStyle: TextStyle(color: AppTheme.white),
+                        hintText: 'Enter your first name',
+                        hintStyle: TextStyle(color: AppTheme.white),
+                        prefixIcon: Icon(Icons.person_outline, color: AppTheme.white),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'First name is required';
+                        }
+                        return null;
+                      },
                     ),
                   ),
-                ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Last Name Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryRed,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextFormField(
+                      controller: _lastNameController,
+                      style: const TextStyle(color: AppTheme.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Last Name',
+                        labelStyle: TextStyle(color: AppTheme.white),
+                        hintText: 'Enter your last name',
+                        hintStyle: TextStyle(color: AppTheme.white),
+                        prefixIcon: Icon(Icons.person_outline, color: AppTheme.white),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Last name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Address Field
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondaryBlue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextFormField(
+                      controller: _addressController,
+                      style: const TextStyle(color: AppTheme.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Address',
+                        labelStyle: TextStyle(color: AppTheme.white),
+                        hintText: 'Enter your address',
+                        hintStyle: TextStyle(color: AppTheme.white),
+                        prefixIcon: Icon(Icons.location_on_outlined, color: AppTheme.white),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Address is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ] else ...[
+                  // Email Field (for email login option)
+                  CustomTextField(
+                    controller: _phoneController,
+                    labelText: 'Email',
+                    hintText: 'Enter your email',
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: Icons.email_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppConstants.requiredFieldMessage;
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return AppConstants.invalidEmailMessage;
+                      }
+                      return null;
+                    },
+                  ),
+                ],
                 
                 const SizedBox(height: 32),
                 
-                // Login Button
+                // Primary Login Button
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
+                  onPressed: _isLoading ? null : (_showEmailLogin ? _handleEmailLogin : _handlePhoneLogin),
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
@@ -192,58 +259,72 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
                           ),
                         )
-                      : const Text('Sign In'),
+                      : Text(_showEmailLogin ? 'Continue with Email' : 'Continue with Phone'),
                 ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 
-                // Divider
-                const Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(
-                          color: AppTheme.gray,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
+                // Secondary Login Button
+                OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showEmailLogin = !_showEmailLogin;
+                      _phoneController.clear();
+                    });
+                  },
+                  child: Text(_showEmailLogin ? 'Continue with Phone' : 'Continue with Email'),
                 ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 
-                // Register Link
+                // User Type Selection
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Don't have an account? ",
-                      style: TextStyle(color: AppTheme.gray),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          // TODO: Set user type to customer and continue
+                        },
+                        child: const Text(
+                          'I\'m a Customer',
+                          style: TextStyle(color: AppTheme.secondaryBlue),
+                        ),
+                      ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        context.go('/register');
-                      },
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          color: AppTheme.primaryRed,
-                          fontWeight: FontWeight.w600,
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: AppTheme.textSecondary,
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          // TODO: Navigate to agent registration
+                        },
+                        child: const Text(
+                          'I\'m a Service Provider',
+                          style: TextStyle(color: AppTheme.secondaryBlue),
                         ),
                       ),
                     ),
                   ],
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Terms and Privacy
+                Text(
+                  'By continuing, you agree to our Terms of Service and Privacy Policy',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 
                 const SizedBox(height: 40),
                 
                 // Error Message
-                if (authState is _Error)
+                if (authState is Error)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

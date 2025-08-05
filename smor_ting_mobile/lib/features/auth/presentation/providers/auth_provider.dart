@@ -62,28 +62,28 @@ class AuthNotifier extends _$AuthNotifier {
 sealed class AuthState {
   const AuthState();
 
-  const factory AuthState.initial() = _Initial;
-  const factory AuthState.loading() = _Loading;
-  const factory AuthState.authenticated(User user) = _Authenticated;
-  const factory AuthState.error(String message) = _Error;
+  const factory AuthState.initial() = Initial;
+  const factory AuthState.loading() = Loading;
+  factory AuthState.authenticated(User user) = Authenticated;
+  const factory AuthState.error(String message) = Error;
 }
 
-class _Initial extends AuthState {
-  const _Initial();
+class Initial extends AuthState {
+  const Initial();
 }
 
-class _Loading extends AuthState {
-  const _Loading();
+class Loading extends AuthState {
+  const Loading();
 }
 
-class _Authenticated extends AuthState {
+class Authenticated extends AuthState {
   final User user;
-  const _Authenticated(this.user);
+  Authenticated(this.user);
 }
 
-class _Error extends AuthState {
+class Error extends AuthState {
   final String message;
-  const _Error(this.message);
+  const Error(this.message);
 }
 
 // User Model
@@ -97,7 +97,7 @@ class User {
   final bool isVerified;
   final DateTime createdAt;
 
-  const User({
+  User({
     required this.id,
     required this.email,
     required this.name,
@@ -106,7 +106,7 @@ class User {
     this.profileImage,
     this.isVerified = false,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime(2024, 1, 1);
 
   User copyWith({
     String? id,

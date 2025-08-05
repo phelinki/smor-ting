@@ -319,7 +319,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 const SizedBox(height: 40),
                 
                 // Error Message
-                if (authState is _Error)
+                if (authState is Error)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
