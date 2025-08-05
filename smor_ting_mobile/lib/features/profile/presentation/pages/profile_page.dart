@@ -100,7 +100,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final authState = ref.watch(authNotifierProvider);
     final theme = Theme.of(context);
 
-    if (authState is! _Authenticated) {
+    if (authState is! Authenticated) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),

@@ -116,12 +116,12 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
 
     // Listen to auth state changes
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next is _Authenticated) {
+      if (next is Authenticated) {
         Navigator.of(context).pushReplacementNamed('/home');
-      } else if (next is _Error) {
+      } else if (next is Error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.message),
+            content: Text((next as Error).message),
             backgroundColor: Colors.red,
           ),
         );
@@ -282,7 +282,7 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: authState is _Loading ? null : _verifyOTP,
+                  onPressed: authState is Loading ? null : _verifyOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD21034),
                     foregroundColor: Colors.white,
@@ -291,7 +291,7 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                     ),
                     elevation: 0,
                   ),
-                  child: authState is _Loading
+                  child: authState is Loading
                       ? const SizedBox(
                           width: 24,
                           height: 24,

@@ -95,7 +95,7 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   void clearError() {
-    if (state is _Error) {
+    if (state is Error) {
       state = const AuthState.initial();
     }
   }
@@ -105,36 +105,36 @@ class AuthNotifier extends _$AuthNotifier {
 sealed class AuthState {
   const AuthState();
 
-  const factory AuthState.initial() = _Initial;
-  const factory AuthState.loading() = _Loading;
-  const factory AuthState.authenticated(User user, String accessToken) = _Authenticated;
-  const factory AuthState.requiresOTP({required String email, required User user}) = _RequiresOTP;
-  const factory AuthState.error(String message) = _Error;
+  const factory AuthState.initial() = Initial;
+  const factory AuthState.loading() = Loading;
+  const factory AuthState.authenticated(User user, String accessToken) = Authenticated;
+  const factory AuthState.requiresOTP({required String email, required User user}) = RequiresOTP;
+  const factory AuthState.error(String message) = Error;
 }
 
-class _Initial extends AuthState {
-  const _Initial();
+class Initial extends AuthState {
+  const Initial();
 }
 
-class _Loading extends AuthState {
-  const _Loading();
+class Loading extends AuthState {
+  const Loading();
 }
 
-class _Authenticated extends AuthState {
+class Authenticated extends AuthState {
   final User user;
   final String accessToken;
-  const _Authenticated(this.user, this.accessToken);
+  const Authenticated(this.user, this.accessToken);
 }
 
-class _RequiresOTP extends AuthState {
+class RequiresOTP extends AuthState {
   final String email;
   final User user;
-  const _RequiresOTP({required this.email, required this.user});
+  const RequiresOTP({required this.email, required this.user});
 }
 
-class _Error extends AuthState {
+class Error extends AuthState {
   final String message;
-  const _Error(this.message);
+  const Error(this.message);
 }
 
 

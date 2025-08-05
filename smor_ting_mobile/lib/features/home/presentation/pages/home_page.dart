@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/models/service.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../wallet/presentation/pages/wallet_page.dart';
@@ -89,7 +90,7 @@ class _ServicesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-            final userName = authState is Authenticated ? authState.user.name.split(' ').first : 'User';
+            final userName = authState is Authenticated ? authState.user.firstName : 'User';
 
     return Scaffold(
       backgroundColor: AppTheme.white,
@@ -370,7 +371,7 @@ class _ServicesPage extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              category.icon,
+              _getIconData(category.icon),
               size: 32,
               color: AppTheme.secondaryBlue,
             ),
@@ -495,15 +496,34 @@ class _ServicesPage extends ConsumerWidget {
       ),
     );
   }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'plumbing':
+        return Icons.plumbing;
+      case 'electrical_services':
+        return Icons.electrical_services;
+      case 'cleaning_services':
+        return Icons.cleaning_services;
+      case 'handyman':
+        return Icons.handyman;
+      case 'format_paint':
+        return Icons.format_paint;
+      case 'ac_unit':
+        return Icons.ac_unit;
+      case 'grass':
+        return Icons.grass;
+      case 'local_shipping':
+        return Icons.local_shipping;
+      case 'security':
+        return Icons.security;
+      default:
+        return Icons.build;
+    }
+  }
 }
 
 // Data classes for service categories and recommendations
-class ServiceCategory {
-  final String name;
-  final IconData icon;
-
-  ServiceCategory({required this.name, required this.icon});
-}
 
 class RecommendedService {
   final String title;
@@ -523,15 +543,96 @@ class RecommendedService {
 
 // Sample data
 final List<ServiceCategory> _serviceCategories = [
-  ServiceCategory(name: 'Plumbing', icon: Icons.plumbing),
-  ServiceCategory(name: 'Electrical', icon: Icons.electrical_services),
-  ServiceCategory(name: 'Cleaning', icon: Icons.cleaning_services),
-  ServiceCategory(name: 'Carpentry', icon: Icons.handyman),
-  ServiceCategory(name: 'Painting', icon: Icons.format_paint),
-  ServiceCategory(name: 'HVAC', icon: Icons.ac_unit),
-  ServiceCategory(name: 'Gardening', icon: Icons.grass),
-  ServiceCategory(name: 'Moving', icon: Icons.local_shipping),
-  ServiceCategory(name: 'Security', icon: Icons.security),
+  ServiceCategory(
+    id: 'plumbing',
+    name: 'Plumbing',
+    description: 'Plumbing services',
+    icon: 'plumbing',
+    color: '#2196F3',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'electrical',
+    name: 'Electrical',
+    description: 'Electrical services',
+    icon: 'electrical_services',
+    color: '#FF9800',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'cleaning',
+    name: 'Cleaning',
+    description: 'Cleaning services',
+    icon: 'cleaning_services',
+    color: '#4CAF50',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'carpentry',
+    name: 'Carpentry',
+    description: 'Carpentry services',
+    icon: 'handyman',
+    color: '#795548',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'painting',
+    name: 'Painting',
+    description: 'Painting services',
+    icon: 'format_paint',
+    color: '#9C27B0',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'hvac',
+    name: 'HVAC',
+    description: 'HVAC services',
+    icon: 'ac_unit',
+    color: '#607D8B',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'gardening',
+    name: 'Gardening',
+    description: 'Gardening services',
+    icon: 'grass',
+    color: '#8BC34A',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'moving',
+    name: 'Moving',
+    description: 'Moving services',
+    icon: 'local_shipping',
+    color: '#FF5722',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
+  ServiceCategory(
+    id: 'security',
+    name: 'Security',
+    description: 'Security services',
+    icon: 'security',
+    color: '#F44336',
+    isActive: true,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ),
 ];
 
 final List<RecommendedService> _recommendedServices = [
@@ -624,7 +725,7 @@ class _ProfilePage extends ConsumerWidget {
                 radius: 50,
                 backgroundColor: AppTheme.secondaryBlue,
                 child: Text(
-                  authState.user.name[0].toUpperCase(),
+                                          authState.user.firstName[0].toUpperCase(),
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -634,7 +735,7 @@ class _ProfilePage extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                authState.user.name,
+                                        authState.user.fullName,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

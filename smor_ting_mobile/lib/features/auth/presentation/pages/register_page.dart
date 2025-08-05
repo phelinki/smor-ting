@@ -60,7 +60,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         password: _passwordController.text,
-        role: _selectedUserType == AppConstants.userTypeProvider ? UserRole.provider : UserRole.customer,
+        role: _selectedUserType == AppConstants.userTypeAgent ? UserRole.provider : UserRole.customer,
       );
     } finally {
       if (mounted) {
@@ -103,9 +103,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     // Listen to auth state changes
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next is _Authenticated) {
+      if (next is Authenticated) {
         context.go('/home');
-      } else if (next is _RequiresOTP) {
+      } else if (next is RequiresOTP) {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => OTPVerificationPage(
@@ -354,7 +354,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
                     ),
                     child: Text(
-                      authState.message,
+                      (authState as Error).message,
                       style: const TextStyle(
                         color: AppTheme.error,
                         fontSize: 14,
