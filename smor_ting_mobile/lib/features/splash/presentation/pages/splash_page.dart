@@ -56,10 +56,10 @@ class _SplashPageState extends ConsumerState<SplashPage>
     await _logoController.forward();
     await _textController.forward();
     
-    // Navigate to login after animations
+    // Navigate to onboarding after animations
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
-      context.go('/login');
+      context.go('/onboarding');
     }
   }
 
@@ -73,15 +73,15 @@ class _SplashPageState extends ConsumerState<SplashPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.primaryRed,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.white,
-              AppTheme.lightGray,
+              AppTheme.primaryRed,
+              Color(0xFFE53935), // Slightly darker red for gradient
             ],
           ),
         ),
@@ -99,19 +99,19 @@ class _SplashPageState extends ConsumerState<SplashPage>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryRed,
+                        color: AppTheme.white,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryRed.withValues(alpha: 0.3),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: const Icon(
-                        Icons.build,
-                        color: AppTheme.white,
+                        Icons.handyman,
+                        color: AppTheme.primaryRed,
                         size: 60,
                       ),
                     ),
@@ -133,20 +133,16 @@ class _SplashPageState extends ConsumerState<SplashPage>
                         children: [
                           Text(
                             AppConstants.appName,
-                            style: const TextStyle(
-                              fontSize: 32,
+                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                              color: AppTheme.white,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryRed,
-                              fontFamily: 'Poppins',
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             AppConstants.appDescription,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.gray,
-                              fontFamily: 'Poppins',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: AppTheme.white.withValues(alpha: 0.9),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -161,7 +157,8 @@ class _SplashPageState extends ConsumerState<SplashPage>
               
               // Loading indicator
               const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryRed),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
+                strokeWidth: 3,
               ),
             ],
           ),
