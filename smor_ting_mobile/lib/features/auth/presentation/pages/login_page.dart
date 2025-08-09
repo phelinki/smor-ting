@@ -19,6 +19,8 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -28,6 +30,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _addressController.dispose();
@@ -65,8 +69,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     try {
       await ref.read(authNotifierProvider.notifier).login(
-        _phoneController.text.trim(),
-        'password', // TODO: Add password field for email login
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
     } finally {
       if (mounted) {
@@ -122,7 +126,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Connect with trusted service providers',
+                        'Connect with trusted agents',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
@@ -166,15 +170,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     child: TextFormField(
                       controller: _firstNameController,
-                      style: const TextStyle(color: AppTheme.white),
-                      decoration: const InputDecoration(
+                      style: const TextStyle(color: AppTheme.white, fontSize: 16),
+                      decoration: InputDecoration(
                         labelText: 'First Name',
-                        labelStyle: TextStyle(color: AppTheme.white),
+                        labelStyle: const TextStyle(color: AppTheme.white, fontSize: 14),
                         hintText: 'Enter your first name',
-                        hintStyle: TextStyle(color: AppTheme.white),
-                        prefixIcon: Icon(Icons.person_outline, color: AppTheme.white),
+                        hintStyle: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+                        prefixIcon: const Icon(Icons.person_outline, color: AppTheme.white),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -195,15 +199,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     child: TextFormField(
                       controller: _lastNameController,
-                      style: const TextStyle(color: AppTheme.white),
-                      decoration: const InputDecoration(
+                      style: const TextStyle(color: AppTheme.white, fontSize: 16),
+                      decoration: InputDecoration(
                         labelText: 'Last Name',
-                        labelStyle: TextStyle(color: AppTheme.white),
+                        labelStyle: const TextStyle(color: AppTheme.white, fontSize: 14),
                         hintText: 'Enter your last name',
-                        hintStyle: TextStyle(color: AppTheme.white),
-                        prefixIcon: Icon(Icons.person_outline, color: AppTheme.white),
+                        hintStyle: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+                        prefixIcon: const Icon(Icons.person_outline, color: AppTheme.white),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -224,15 +228,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     child: TextFormField(
                       controller: _addressController,
-                      style: const TextStyle(color: AppTheme.white),
-                      decoration: const InputDecoration(
+                      style: const TextStyle(color: AppTheme.white, fontSize: 16),
+                      decoration: InputDecoration(
                         labelText: 'Address',
-                        labelStyle: TextStyle(color: AppTheme.white),
+                        labelStyle: const TextStyle(color: AppTheme.white, fontSize: 14),
                         hintText: 'Enter your address',
-                        hintStyle: TextStyle(color: AppTheme.white),
-                        prefixIcon: Icon(Icons.location_on_outlined, color: AppTheme.white),
+                        hintStyle: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+                        prefixIcon: const Icon(Icons.location_on_outlined, color: AppTheme.white),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -245,7 +249,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ] else ...[
                   // Email Field (for email login option)
                   CustomTextField(
-                    controller: _phoneController,
+                    controller: _emailController,
                     labelText: 'Email',
                     hintText: 'Enter your email',
                     keyboardType: TextInputType.emailAddress,
@@ -256,6 +260,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       }
                       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                         return AppConstants.invalidEmailMessage;
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Password Field (for email login option)
+                  CustomTextField(
+                    controller: _passwordController,
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    keyboardType: TextInputType.visiblePassword,
+                    prefixIcon: Icons.lock_outlined,
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
                       }
                       return null;
                     },
@@ -287,6 +312,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     setState(() {
                       _showEmailLogin = !_showEmailLogin;
                       _phoneController.clear();
+                      _emailController.clear();
+                      _passwordController.clear();
                     });
                   },
                   child: Text(_showEmailLogin ? 'Continue with Phone' : 'Continue with Email'),
@@ -319,7 +346,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           // TODO: Navigate to agent registration
                         },
                         child: const Text(
-                          'I\'m a Service Provider',
+                          'I\'m an Agent',
                           style: TextStyle(color: AppTheme.secondaryBlue),
                         ),
                       ),

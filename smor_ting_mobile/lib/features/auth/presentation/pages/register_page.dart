@@ -182,7 +182,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildUserTypeCard(
-                        title: 'Service Provider',
+                        title: 'Agent',
                         subtitle: 'Offering services',
                         icon: Icons.build,
                         isSelected: _selectedUserType == AppConstants.userTypeAgent,

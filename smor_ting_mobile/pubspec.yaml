@@ -43,9 +43,11 @@ dependencies:
   # Local Storage & Database
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.2.2
   sqflite: ^2.3.0
   path: ^1.8.3
+  connectivity_plus: ^6.0.5
 
   # UI Components
   cupertino_icons: ^1.0.2
@@ -66,15 +68,14 @@ dependencies:
   google_maps_flutter: ^2.5.3
 
   # Notifications
-  firebase_messaging: ^14.7.10
-  firebase_core: ^2.24.2
+  # firebase_messaging: ^14.7.10
+  # firebase_core: ^2.24.2
 
   # Payment Integration
   flutter_stripe: ^10.0.0
 
   # Image & File Handling
   image_picker: ^1.0.4
-  file_picker: ^6.1.1
 
   # Utilities
   intl: ^0.18.1

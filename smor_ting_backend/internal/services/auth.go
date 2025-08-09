@@ -208,13 +208,13 @@ func (a *AuthService) saveOTP(ctx context.Context, email, otp, purpose string) e
 func (a *AuthService) generateTokens(user models.User) (string, string, error) {
 	// Access token (expires in 24 hours)
 	accessClaims := Claims{
-		UserID: user.ID,
+		UserID: user.ID.Hex(),
 		Email:  user.Email,
 		Role:   string(user.Role),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Subject:   user.ID,
+			Subject:   user.ID.Hex(),
 		},
 	}
 
@@ -226,13 +226,13 @@ func (a *AuthService) generateTokens(user models.User) (string, string, error) {
 
 	// Refresh token (expires in 7 days)
 	refreshClaims := Claims{
-		UserID: user.ID,
+		UserID: user.ID.Hex(),
 		Email:  user.Email,
 		Role:   string(user.Role),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Subject:   user.ID,
+			Subject:   user.ID.Hex(),
 		},
 	}
 

@@ -84,7 +84,7 @@ class HelpPage extends ConsumerWidget {
               children: [
                 _FAQTile(
                   question: 'How do I book a service?',
-                  answer: 'Browse service categories, select a service, choose your preferred provider, and complete the booking with your details.',
+                  answer: 'Browse service categories, select a service, choose your preferred agent, and complete the booking with your details.',
                 ),
                 _FAQTile(
                   question: 'How do I verify my email?',
@@ -95,8 +95,8 @@ class HelpPage extends ConsumerWidget {
                   answer: 'We accept Flutterwave, Orange Money, MTN Mobile Money, and bank transfers in both USD and LRD.',
                 ),
                 _FAQTile(
-                  question: 'How do I become a service provider?',
-                  answer: 'Register with a provider account, complete your profile, add your services, and wait for verification.',
+                  question: 'How do I become an agent?',
+                  answer: 'Register with an agent account, complete your profile, add your services, and wait for verification.',
                 ),
                 _FAQTile(
                   question: 'How do I cancel a booking?',

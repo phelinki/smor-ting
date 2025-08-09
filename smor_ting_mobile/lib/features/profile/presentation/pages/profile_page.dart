@@ -238,7 +238,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      user.role == UserRole.provider ? 'Service Provider' : 'Customer',
+                      user.role == UserRole.provider ? 'Agent' : 'Customer',
                       style: TextStyle(
                         color: user.role == UserRole.provider 
                             ? const Color(0xFFD21034)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -102,6 +103,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.lock_outline,
                   onTap: () {
                     _showChangePasswordDialog();
+                  },
+                ),
+                _SettingsTile(
+                  title: 'KYC Verification',
+                  subtitle: 'Verify your identity with SmileID',
+                  icon: Icons.verified_user,
+                  onTap: () {
+                    context.push('/kyc');
                   },
                 ),
                 _SettingsTile(

@@ -1,3 +1,5 @@
+//go:build legacy_sql_auth
+
 package auth
 
 import (
@@ -15,21 +17,36 @@ import (
 )
 
 // Service represents the authentication service
+// Deprecated legacy SQL Service retained only for reference; do not use
 type Service struct {
-	db     *sql.DB
 	config *configs.AuthConfig
 	logger *logger.Logger
 }
 
 // User represents a user in the system
 type User struct {
-	ID           int       `json:"id"`
-	Email        string    `json:"email"`
-	FirstName    string    `json:"first_name"`
-	LastName     string    `json:"last_name"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	PasswordHash string    `json:"-"` // Never expose password hash
+	ID              int       `json:"id"`
+	Email           string    `json:"email"`
+	FirstName       string    `json:"first_name"`
+	LastName        string    `json:"last_name"`
+	Phone           string    `json:"phone"`
+	Role            string    `json:"role"`
+	IsEmailVerified bool      `json:"is_email_verified"`
+	ProfileImage    string    `json:"profile_image"`
+	Address         *Address  `json:"address"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	PasswordHash    string    `json:"-"` // Never expose password hash
+}
+
+// Address represents a user's address
+type Address struct {
+	Street    string  `json:"street"`
+	City      string  `json:"city"`
+	County    string  `json:"county"`
+	Country   string  `json:"country"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 // RegisterRequest represents a user registration request
@@ -38,6 +55,8 @@ type RegisterRequest struct {
 	Password  string `json:"password" validate:"required,min=8"`
 	FirstName string `json:"first_name" validate:"required"`
 	LastName  string `json:"last_name" validate:"required"`
+	Phone     string `json:"phone"`
+	Role      string `json:"role"`
 }
 
 // LoginRequest represents a user login request
@@ -48,8 +67,10 @@ type LoginRequest struct {
 
 // AuthResponse represents an authentication response
 type AuthResponse struct {
-	User  *User  `json:"user"`
-	Token string `json:"token"`
+	User         *User  `json:"user"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	RequiresOTP  bool   `json:"requires_otp"`
 }
 
 // Claims represents JWT claims
@@ -60,10 +81,7 @@ type Claims struct {
 }
 
 // NewService creates a new authentication service
-func NewService(db *sql.DB, config *configs.AuthConfig, logger *logger.Logger) (*Service, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database connection is required")
-	}
+func NewService(_ interface{}, config *configs.AuthConfig, logger *logger.Logger) (*Service, error) {
 	if config == nil {
 		return nil, fmt.Errorf("auth configuration is required")
 	}
@@ -72,7 +90,6 @@ func NewService(db *sql.DB, config *configs.AuthConfig, logger *logger.Logger) (
 	}
 
 	return &Service{
-		db:     db,
 		config: config,
 		logger: logger,
 	}, nil
@@ -114,8 +131,10 @@ func (s *Service) Register(req *RegisterRequest) (*AuthResponse, error) {
 	s.logger.Info("User registered successfully", zap.String("email", req.Email), zap.Int("user_id", user.ID))
 
 	return &AuthResponse{
-		User:  user,
-		Token: token,
+		User:         user,
+		AccessToken:  token,
+		RefreshToken: "", // TODO: Implement refresh token
+		RequiresOTP:  false,
 	}, nil
 }
 
@@ -148,8 +167,10 @@ func (s *Service) Login(req *LoginRequest) (*AuthResponse, error) {
 	s.logger.Info("User logged in successfully", zap.String("email", req.Email), zap.Int("user_id", user.ID))
 
 	return &AuthResponse{
-		User:  user,
-		Token: token,
+		User:         user,
+		AccessToken:  token,
+		RefreshToken: "", // TODO: Implement refresh token
+		RequiresOTP:  false,
 	}, nil
 }
 
@@ -187,30 +208,43 @@ func (s *Service) userExists(email string) (bool, error) {
 
 // createUser creates a new user in the database
 func (s *Service) createUser(req *RegisterRequest, passwordHash string) (*User, error) {
-	query := `
-		INSERT INTO users (email, password_hash, first_name, last_name)
-		VALUES (?, ?, ?, ?)
-		RETURNING id, email, first_name, last_name, created_at, updated_at
+	// Set default role if not provided
+	role := req.Role
+	if role == "" {
+		role = "customer"
+	}
+
+	// Insert user
+	insertQuery := `
+		INSERT INTO users (email, password_hash, first_name, last_name, phone, role, is_email_verified, profile_image, street, city, county, country, latitude, longitude)
+		VALUES (?, ?, ?, ?, ?, ?, FALSE, '', '', '', '', '', 0.0, 0.0)
 	`
 
-	user := &User{}
-	err := s.db.QueryRow(query, req.Email, passwordHash, req.FirstName, req.LastName).
-		Scan(&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.CreatedAt, &user.UpdatedAt)
-
+	result, err := s.db.Exec(insertQuery, req.Email, passwordHash, req.FirstName, req.LastName, req.Phone, role)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	// Get the inserted user ID
+	userID, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	// Retrieve the created user
+	return s.getUserByID(int(userID))
 }
 
 // getUserByEmail retrieves a user by email
 func (s *Service) getUserByEmail(email string) (*User, error) {
-	query := `SELECT id, email, password_hash, first_name, last_name, created_at, updated_at FROM users WHERE email = ?`
+	query := `SELECT id, email, password_hash, first_name, last_name, phone, role, is_email_verified, profile_image, street, city, county, country, latitude, longitude, created_at, updated_at FROM users WHERE email = ?`
 
 	user := &User{}
+	user.Address = &Address{} // Initialize address
 	err := s.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName,
+		&user.Phone, &user.Role, &user.IsEmailVerified, &user.ProfileImage,
+		&user.Address.Street, &user.Address.City, &user.Address.County, &user.Address.Country, &user.Address.Latitude, &user.Address.Longitude,
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 
@@ -218,16 +252,25 @@ func (s *Service) getUserByEmail(email string) (*User, error) {
 		return nil, err
 	}
 
+	// Debug logging
+	s.logger.Info("Retrieved user from database",
+		zap.String("email", user.Email),
+		zap.String("role", user.Role),
+		zap.String("phone", user.Phone))
+
 	return user, nil
 }
 
 // getUserByID retrieves a user by ID
 func (s *Service) getUserByID(id int) (*User, error) {
-	query := `SELECT id, email, first_name, last_name, created_at, updated_at FROM users WHERE id = ?`
+	query := `SELECT id, email, password_hash, first_name, last_name, phone, role, is_email_verified, profile_image, street, city, county, country, latitude, longitude, created_at, updated_at FROM users WHERE id = ?`
 
 	user := &User{}
+	user.Address = &Address{} // Initialize address
 	err := s.db.QueryRow(query, id).Scan(
-		&user.ID, &user.Email, &user.FirstName, &user.LastName,
+		&user.ID, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName,
+		&user.Phone, &user.Role, &user.IsEmailVerified, &user.ProfileImage,
+		&user.Address.Street, &user.Address.City, &user.Address.County, &user.Address.Country, &user.Address.Latitude, &user.Address.Longitude,
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 

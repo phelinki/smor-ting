@@ -140,7 +140,7 @@ class AboutPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Smor-Ting is a comprehensive offline-first marketplace platform connecting customers with verified service providers in Liberia. Our mission is to make quality handyman services accessible to everyone while providing service providers with tools to grow their business.',
+                    'Smor-Ting is a comprehensive offline-first marketplace platform connecting customers with verified agents in Liberia. Our mission is to make quality handyman services accessible to everyone while providing agents with tools to grow their business.',
                     style: TextStyle(
                       color: Colors.grey[700],
                       fontSize: 16,
@@ -179,8 +179,8 @@ class AboutPage extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _FeatureItem(
                     icon: Icons.verified_user,
-                    title: 'Verified Providers',
-                    description: 'All service providers are verified and rated by customers',
+                                          title: 'Verified Agents',
+                    description: 'All agents are verified and rated by customers',
                   ),
                   _FeatureItem(
                     icon: Icons.payment,

@@ -98,7 +98,7 @@ class _ServiceListingsPageState extends ConsumerState<ServiceListingsPage> {
                 ),
                 const Spacer(),
                 Text(
-                  '${_sampleProviders.length} providers found',
+                  '${_sampleProviders.length} agents found',
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 14,

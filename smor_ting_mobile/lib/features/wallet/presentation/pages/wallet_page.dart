@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/connectivity_provider.dart';
 
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/services/wallet_cache.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class WalletPage extends ConsumerStatefulWidget {
   const WalletPage({super.key});
@@ -13,9 +17,40 @@ class WalletPage extends ConsumerStatefulWidget {
 
 class _WalletPageState extends ConsumerState<WalletPage> {
   int _selectedTabIndex = 0;
+  late final ApiService _api;
+  late final WalletCache _cache;
+  Map<String, dynamic>? _balances;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = ref.read(apiServiceProvider);
+    _cache = WalletCache(const FlutterSecureStorage());
+    _cache.init().then((_) {
+      setState(() {
+        _balances = _cache.getBalances();
+      });
+      _refreshBalancesIfOnline();
+    });
+  }
+
+  Future<void> _refreshBalancesIfOnline() async {
+    final net = ref.read(connectivityProvider);
+    if (!net.isOnline) return;
+    try {
+      final b = await _api.getWalletBalances();
+      await _cache.saveBalances(b);
+      if (mounted) {
+        setState(() {
+          _balances = b;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
+    final net = ref.watch(connectivityProvider);
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
@@ -83,8 +118,10 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '\$125.00',
+                   Text(
+                     net.isOnline
+                         ? (_balances != null ? '${_balances!['available']} ${_balances!['currency']}' : '...')
+                         : 'Offline',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       color: AppTheme.white,
                       fontWeight: FontWeight.bold,
@@ -134,7 +171,9 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                       icon: Icons.add,
                       label: 'Add Money',
                       color: AppTheme.primaryRed,
-                      onTap: () => _showAddMoneyDialog(),
+                      onTap: net.isOnline
+                          ? () => _showAddMoneyDialog()
+                          : () => _showOfflineSnack(),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -143,7 +182,9 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                       icon: Icons.send,
                       label: 'Send Money',
                       color: AppTheme.secondaryBlue,
-                      onTap: () => _showSendMoneyDialog(),
+                      onTap: net.isOnline
+                          ? () => _showSendMoneyDialog()
+                          : () => _showOfflineSnack(),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -493,6 +534,15 @@ class _WalletPageState extends ConsumerState<WalletPage> {
       const SnackBar(
         content: Text('Add payment method feature coming soon!'),
         backgroundColor: AppTheme.secondaryBlue,
+      ),
+    );
+  }
+
+  void _showOfflineSnack() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Wallet actions require internet connection.'),
+        backgroundColor: AppTheme.primaryRed,
       ),
     );
   }

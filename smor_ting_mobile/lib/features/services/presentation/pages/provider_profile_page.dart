@@ -17,6 +17,88 @@ class ProviderProfilePage extends ConsumerStatefulWidget {
 }
 
 class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  bool _isDateTimeSelected = false;
+
+  // Agent's working hours (9 AM to 6 PM)
+  final List<TimeOfDay> _availableTimes = [
+    const TimeOfDay(hour: 9, minute: 0),
+    const TimeOfDay(hour: 10, minute: 0),
+    const TimeOfDay(hour: 11, minute: 0),
+    const TimeOfDay(hour: 12, minute: 0),
+    const TimeOfDay(hour: 13, minute: 0),
+    const TimeOfDay(hour: 14, minute: 0),
+    const TimeOfDay(hour: 15, minute: 0),
+    const TimeOfDay(hour: 16, minute: 0),
+    const TimeOfDay(hour: 17, minute: 0),
+    const TimeOfDay(hour: 18, minute: 0),
+  ];
+
+  void _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryRed,
+              onPrimary: AppTheme.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _updateBookingState();
+      });
+    }
+  }
+
+  void _selectTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 9, minute: 0),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryRed,
+              onPrimary: AppTheme.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedTime = picked;
+        _updateBookingState();
+      });
+    }
+  }
+
+  void _updateBookingState() {
+    setState(() {
+      _isDateTimeSelected = _selectedDate != null && _selectedTime != null;
+    });
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _formatTime(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     // TODO: Fetch provider data based on providerId
@@ -100,73 +182,54 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                             child: const Icon(
                               Icons.person,
                               size: 40,
-                              color: AppTheme.secondaryBlue,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
-                          
                           const SizedBox(width: 16),
-                          
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Name and Verification
-                                Row(
-                                  children: [
-                                    Text(
-                                      provider.name,
-                                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                    if (provider.isVerified) ...[
-                                      const SizedBox(width: 8),
-                                      const Icon(
-                                        Icons.verified,
-                                        size: 24,
-                                        color: AppTheme.secondaryBlue,
-                                      ),
-                                    ],
-                                  ],
+                                Text(
+                                  provider.name,
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                
-                                const SizedBox(height: 8),
-                                
-                                // Rating and Reviews
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.star,
-                                      size: 20,
+                                      size: 16,
                                       color: AppTheme.warning,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      provider.rating.toString(),
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        color: AppTheme.secondaryBlue,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '(${provider.reviewCount} reviews)',
+                                      '${provider.rating} (${provider.reviewCount} reviews)',
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                         color: AppTheme.textSecondary,
                                       ),
                                     ),
                                   ],
                                 ),
-                                
-                                const SizedBox(height: 8),
-                                
-                                // Years of Experience
-                                Text(
-                                  '${provider.yearsOfExperience} years of experience',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.verified,
+                                      size: 16,
+                                      color: AppTheme.successGreen,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Verified Agent',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppTheme.successGreen,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -176,15 +239,38 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                       
                       const SizedBox(height: 24),
                       
+                      // Date and Time Selection Section
+                      _buildDateTimeSelection(),
+                      
+                      const SizedBox(height: 24),
+                      
                       // Action Buttons
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: _isDateTimeSelected ? () {
                                 context.push('/booking-confirmation/${provider.id}');
-                              },
-                              child: const Text('Book Now'),
+                              } : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isDateTimeSelected 
+                                    ? AppTheme.primaryRed 
+                                    : AppTheme.lightGray,
+                                foregroundColor: _isDateTimeSelected 
+                                    ? AppTheme.white 
+                                    : AppTheme.textSecondary,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                _isDateTimeSelected ? 'Book Now' : 'Select Date & Time',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -193,7 +279,21 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                               onPressed: () {
                                 // TODO: Navigate to messages
                               },
-                              child: const Text('Message'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.primaryRed,
+                                side: const BorderSide(color: AppTheme.primaryRed),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Message',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -249,8 +349,8 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: provider.isAvailable 
-                          ? AppTheme.successGreen.withValues(alpha: 0.1)
-                          : AppTheme.primaryRed.withValues(alpha: 0.1),
+                          ? AppTheme.successGreen.withOpacity(0.1)
+                          : AppTheme.primaryRed.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -267,7 +367,7 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                provider.isAvailable ? 'Available Today' : 'Next Available',
+                                provider.isAvailable ? 'Available Now' : 'Currently Busy',
                                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: provider.isAvailable 
@@ -275,11 +375,10 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                                       : AppTheme.primaryRed,
                                 ),
                               ),
+                              const SizedBox(height: 4),
                               Text(
-                                provider.isAvailable 
-                                    ? 'Can start within 2 hours'
-                                    : 'Tomorrow at 9:00 AM',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                'Working hours: 9:00 AM - 6:00 PM',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: AppTheme.textSecondary,
                                 ),
                               ),
@@ -296,12 +395,34 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                 // About Section
                 _buildSection(
                   title: 'About',
-                  child: Text(
-                    provider.description,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textPrimary,
-                      height: 1.5,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        provider.description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.textPrimary,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.work,
+                            size: 16,
+                            color: AppTheme.textSecondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${provider.yearsOfExperience} years of experience',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 
@@ -309,15 +430,13 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                 
                 // Reviews Section
                 _buildSection(
-                  title: 'Reviews (${provider.reviewCount})',
+                  title: 'Reviews',
                   child: Column(
                     children: _sampleReviews.map((review) {
                       return _buildReviewItem(review);
                     }).toList(),
                   ),
                 ),
-                
-                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -326,8 +445,167 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
     );
   }
 
-  Widget _buildSection({required String title, required Widget child}) {
-    return Padding(
+  Widget _buildDateTimeSelection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.lightGray.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.lightGray,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Select Appointment Date & Time',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Date Selection
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: _selectDate,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _selectedDate != null 
+                            ? AppTheme.primaryRed 
+                            : AppTheme.lightGray,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          color: _selectedDate != null 
+                              ? AppTheme.primaryRed 
+                              : AppTheme.textSecondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _selectedDate != null 
+                                ? _formatDate(_selectedDate!)
+                                : 'Select Date',
+                            style: TextStyle(
+                              color: _selectedDate != null 
+                                  ? AppTheme.textPrimary 
+                                  : AppTheme.textSecondary,
+                              fontWeight: _selectedDate != null 
+                                  ? FontWeight.w600 
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: InkWell(
+                  onTap: _selectTime,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _selectedTime != null 
+                            ? AppTheme.primaryRed 
+                            : AppTheme.lightGray,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          color: _selectedTime != null 
+                              ? AppTheme.primaryRed 
+                              : AppTheme.textSecondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _selectedTime != null 
+                                ? _formatTime(_selectedTime!)
+                                : 'Select Time',
+                            style: TextStyle(
+                              color: _selectedTime != null 
+                                  ? AppTheme.textPrimary 
+                                  : AppTheme.textSecondary,
+                              fontWeight: _selectedTime != null 
+                                  ? FontWeight.w600 
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          if (_selectedDate != null && _selectedTime != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.successGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.successGreen.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: AppTheme.successGreen,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Appointment scheduled for ${_formatDate(_selectedDate!)} at ${_formatTime(_selectedTime!)}',
+                    style: TextStyle(
+                      color: AppTheme.successGreen,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,7 +614,6 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -351,17 +628,15 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightGray,
+        color: AppTheme.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.lightGray,
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.build_circle,
-            color: AppTheme.secondaryBlue,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,18 +645,15 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
                   service.name,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
                   ),
                 ),
-                if (service.description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    service.description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  service.description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -404,51 +676,22 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+          color: AppTheme.lightGray,
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.lightGray,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: AppTheme.secondaryBlue,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review.customerName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      review.date,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  review.customerName,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               Row(
@@ -462,7 +705,14 @@ class _ProviderProfilePageState extends ConsumerState<ProviderProfilePage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+          Text(
+            review.date,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
             review.comment,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(

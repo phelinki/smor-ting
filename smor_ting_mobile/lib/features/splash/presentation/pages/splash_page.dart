@@ -56,10 +56,10 @@ class _SplashPageState extends ConsumerState<SplashPage>
     await _logoController.forward();
     await _textController.forward();
     
-    // Navigate to onboarding after animations
+    // Navigate to landing after animations
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
-      context.go('/onboarding');
+      context.go('/landing');
     }
   }
 

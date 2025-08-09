@@ -1,17 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
+import '../constants/api_config.dart';
+import '../models/kyc.dart';
 
 class ApiService {
   late final Dio _dio;
   
   ApiService({String? baseUrl}) {
     _dio = Dio(BaseOptions(
-      baseUrl: baseUrl ?? 'http://localhost:8080/api/v1',
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      baseUrl: baseUrl ?? ApiConfig.baseUrl,
+      connectTimeout: Duration(seconds: ApiConfig.connectTimeoutSeconds),
+      receiveTimeout: Duration(seconds: ApiConfig.receiveTimeoutSeconds),
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'SmorTing-Mobile/${ApiConfig.environmentName}',
       },
     ));
 
@@ -81,6 +84,26 @@ class ApiService {
     try {
       final response = await _dio.get('/users/profile');
       return User.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // Wallet endpoints
+  Future<Map<String, dynamic>> getWalletBalances() async {
+    try {
+      final response = await _dio.get('/wallet/balances');
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // KYC endpoints (SmileID-backed via backend)
+  Future<KycResponse> submitKyc(KycRequest request) async {
+    try {
+      final response = await _dio.post('/kyc/submit', data: request.toJson());
+      return KycResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleError(e);
     }

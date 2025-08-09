@@ -1,0 +1,255 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  GO_VERSION: '1.23'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build application
+        run: |
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o smor-ting-api cmd/main.go
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: smor-ting-api
+          path: smor-ting-api
+
+  deploy-production:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: smor-ting-api
+          path: .
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to production server
+        run: |
+          # Create deployment script
+          cat > deploy.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "Starting deployment..."
+          
+          # Variables
+          APP_NAME="smor-ting-api"
+          APP_DIR="/opt/smor-ting"
+          BACKUP_DIR="/opt/smor-ting/backups"
+          
+          # Create backup
+          if [ -f "$APP_DIR/$APP_NAME" ]; then
+            echo "Creating backup..."
+            sudo cp "$APP_DIR/$APP_NAME" "$BACKUP_DIR/${APP_NAME}_$(date +%Y%m%d_%H%M%S).backup"
+          fi
+          
+          # Stop service
+          echo "Stopping service..."
+          sudo systemctl stop $APP_NAME || true
+          
+          # Copy new binary
+          echo "Installing new binary..."
+          sudo cp smor-ting-api "$APP_DIR/$APP_NAME"
+          sudo chown smor-ting:smor-ting "$APP_DIR/$APP_NAME"
+          sudo chmod +x "$APP_DIR/$APP_NAME"
+          
+          # Start service
+          echo "Starting service..."
+          sudo systemctl start $APP_NAME
+          
+          # Wait for service to start
+          sleep 10
+          
+          # Health check
+          echo "Performing health check..."
+          for i in {1..30}; do
+            if curl -f -s http://localhost:8080/health > /dev/null; then
+              echo "Health check passed!"
+              break
+            fi
+            echo "Health check attempt $i/30 failed"
+            sleep 2
+          done
+          
+          # Show service status
+          sudo systemctl status $APP_NAME --no-pager
+          
+          echo "Deployment completed successfully!"
+          EOF
+          
+          chmod +x deploy.sh
+          
+          # Copy files to server
+          scp smor-ting-api ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/tmp/
+          scp deploy.sh ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/tmp/
+          
+          # Execute deployment
+          ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} "cd /tmp && ./deploy.sh"
+
+      - name: Verify deployment
+        run: |
+          # Wait a moment for service to fully start
+          sleep 30
+          
+          # Test health endpoint
+          curl -f -s https://${{ secrets.DOMAIN }}/health || exit 1
+          
+          echo "Deployment verification completed successfully!"
+
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging'
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: smor-ting-api
+          path: .
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to staging server
+        run: |
+          # Create deployment script for staging
+          cat > deploy-staging.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "Starting staging deployment..."
+          
+          # Variables
+          APP_NAME="smor-ting-api-staging"
+          APP_DIR="/opt/smor-ting-staging"
+          BACKUP_DIR="/opt/smor-ting-staging/backups"
+          
+          # Create backup
+          if [ -f "$APP_DIR/$APP_NAME" ]; then
+            echo "Creating backup..."
+            sudo cp "$APP_DIR/$APP_NAME" "$BACKUP_DIR/${APP_NAME}_$(date +%Y%m%d_%H%M%S).backup"
+          fi
+          
+          # Stop service
+          echo "Stopping service..."
+          sudo systemctl stop $APP_NAME || true
+          
+          # Copy new binary
+          echo "Installing new binary..."
+          sudo cp smor-ting-api "$APP_DIR/$APP_NAME"
+          sudo chown smor-ting:smor-ting "$APP_DIR/$APP_NAME"
+          sudo chmod +x "$APP_DIR/$APP_NAME"
+          
+          # Start service
+          echo "Starting service..."
+          sudo systemctl start $APP_NAME
+          
+          # Wait for service to start
+          sleep 10
+          
+          # Health check
+          echo "Performing health check..."
+          for i in {1..30}; do
+            if curl -f -s http://localhost:8081/health > /dev/null; then
+              echo "Health check passed!"
+              break
+            fi
+            echo "Health check attempt $i/30 failed"
+            sleep 2
+          done
+          
+          # Show service status
+          sudo systemctl status $APP_NAME --no-pager
+          
+          echo "Staging deployment completed successfully!"
+          EOF
+          
+          chmod +x deploy-staging.sh
+          
+          # Copy files to staging server
+          scp smor-ting-api ${{ secrets.STAGING_USERNAME }}@${{ secrets.STAGING_HOST }}:/tmp/
+          scp deploy-staging.sh ${{ secrets.STAGING_USERNAME }}@${{ secrets.STAGING_HOST }}:/tmp/
+          
+          # Execute deployment
+          ssh ${{ secrets.STAGING_USERNAME }}@${{ secrets.STAGING_HOST }} "cd /tmp && ./deploy-staging.sh"
+
+  notify:
+    needs: [deploy-production, deploy-staging]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify deployment status
+        run: |
+          if [ "${{ needs.deploy-production.result }}" == "success" ] || [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+            echo "✅ Deployment completed successfully!"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi

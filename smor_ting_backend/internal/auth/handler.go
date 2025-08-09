@@ -1,3 +1,5 @@
+//go:build legacy_sql_auth
+
 package auth
 
 import (

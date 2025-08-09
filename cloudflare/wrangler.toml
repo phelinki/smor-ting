@@ -1,0 +1,14 @@
+name = "smor-ting-gateway"
+main = "src/worker.ts"
+compatibility_date = "2024-05-25"
+
+account_id = "79b2d1445dc45e3d44d66dd40b6d8474"
+workers_dev = true
+
+[vars]
+UPSTREAM_ORIGIN = ""
+
+[[routes]]
+pattern = "api.smor-ting.com/*"
+zone_id = "efed3ad992752985706390ce9429b77e"
+

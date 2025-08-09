@@ -16,14 +16,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   final List<OnboardingData> _pages = [
     OnboardingData(
-      title: 'Find Trusted Service Providers',
+                      title: 'Find Trusted Agents',
       description: 'Connect with verified professionals for all your home and business needs.',
       icon: Icons.search,
       color: AppTheme.secondaryBlue,
     ),
     OnboardingData(
       title: 'Book Services Instantly',
-      description: 'Schedule appointments with just a few taps and track your service provider in real-time.',
+                      description: 'Schedule appointments with just a few taps and track your agent in real-time.',
       icon: Icons.calendar_today,
       color: AppTheme.primaryRed,
     ),

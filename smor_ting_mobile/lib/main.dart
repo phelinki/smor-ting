@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
@@ -12,14 +11,6 @@ void main() async {
   
   // Initialize Hive for local storage
   await Hive.initFlutter();
-  
-  // Initialize Firebase (optional for MVP1)
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    // Firebase not configured yet, continue without it
-    debugPrint('Firebase not configured: $e');
-  }
   
   runApp(
     const ProviderScope(

@@ -1,0 +1,64 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'smor_ting_backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'smor_ting_backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install deps
+        working-directory: smor_ting_backend
+        run: |
+          go mod download
+
+      - name: Vet
+        working-directory: smor_ting_backend
+        run: go vet ./...
+
+      - name: Test
+        working-directory: smor_ting_backend
+        env:
+          # Provide minimal env for tests
+          ENV: development
+        run: go test ./... -v
+
+      - name: Build
+        working-directory: smor_ting_backend
+        run: go build ./cmd
+
+      - name: Docker build (no push)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: smor_ting_backend
+          file: smor_ting_backend/Dockerfile
+          push: false
+          tags: smorting/backend:ci-${{ github.sha }}
+

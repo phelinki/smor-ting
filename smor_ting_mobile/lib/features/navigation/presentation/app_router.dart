@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/presentation/providers/auth_provider.dart';
-import '../../auth/presentation/pages/login_page.dart';
-import '../../auth/presentation/pages/register_page.dart';
+import '../../../core/models/user.dart';
+import '../../auth/presentation/pages/landing_page.dart';
+import '../../auth/presentation/pages/new_login_page.dart';
+import '../../auth/presentation/pages/new_register_page.dart';
 import '../../auth/presentation/pages/otp_verification_page.dart';
 import '../../home/presentation/pages/home_page.dart';
 import '../../splash/presentation/pages/splash_page.dart';
@@ -16,6 +18,15 @@ import '../../profile/presentation/pages/profile_page.dart';
 import '../../settings/presentation/pages/settings_page.dart';
 import '../../help/presentation/pages/help_page.dart';
 import '../../about/presentation/pages/about_page.dart';
+import '../../booking/presentation/pages/booking_confirmation_page.dart';
+import '../../tracking/presentation/pages/real_time_tracking_page.dart';
+import '../../payment/presentation/pages/payment_methods_page.dart';
+import '../../bookings/presentation/pages/bookings_history_page.dart';
+import '../../messages/presentation/pages/messages_page.dart';
+import '../../agent/presentation/pages/agent_login_page.dart';
+import '../../agent/presentation/pages/agent_verification_page.dart';
+import '../../agent/presentation/pages/agent_dashboard_page.dart';
+import '../../kyc/presentation/pages/kyc_page.dart';
 import '../../../core/models/service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -25,18 +36,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) {
       final isAuthenticated = authState is Authenticated;
-      final isAuthRoute = state.matchedLocation == '/login' || 
+      // While auth is in progress, do not redirect to avoid bouncing
+      if (authState is Loading) {
+        return null;
+      }
+      final isAuthRoute = state.matchedLocation == '/landing' || 
+                         state.matchedLocation == '/login' || 
                          state.matchedLocation == '/register' ||
                          state.matchedLocation == '/verify-otp' ||
-                         state.matchedLocation == '/onboarding';
+                         state.matchedLocation == '/onboarding' ||
+                         state.matchedLocation == '/agent-login';
       
-      // If not authenticated and not on auth route, redirect to login
+      // If not authenticated and not on auth route, redirect to landing
       if (!isAuthenticated && !isAuthRoute && state.matchedLocation != '/') {
-        return '/login';
+        return '/landing';
       }
       
-      // If authenticated and on auth route, redirect to home
+      // If authenticated and on auth route, redirect based on user role
       if (isAuthenticated && isAuthRoute) {
+        final userRole = authState.user.role;
+        if (userRole == UserRole.provider || userRole == UserRole.admin) {
+          return '/agent-dashboard';
+        }
         return '/home';
       }
       
@@ -48,16 +69,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashPage(),
       ),
       GoRoute(
+        path: '/landing',
+        builder: (context, state) => const LandingPage(),
+      ),
+      GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => const NewLoginPage(),
       ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterPage(),
+        builder: (context, state) => const NewRegisterPage(),
       ),
       GoRoute(
         path: '/verify-otp',
@@ -126,6 +151,67 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/about',
         builder: (context, state) => const AboutPage(),
+      ),
+      GoRoute(
+        path: '/booking-confirmation',
+        builder: (context, state) {
+          final serviceId = state.uri.queryParameters['serviceId'] ?? '';
+          final providerId = state.uri.queryParameters['providerId'] ?? '';
+          final serviceName = state.uri.queryParameters['serviceName'] ?? '';
+          final providerName = state.uri.queryParameters['providerName'] ?? '';
+          final price = double.tryParse(state.uri.queryParameters['price'] ?? '0') ?? 0.0;
+          return BookingConfirmationPage(
+            serviceId: serviceId,
+            providerId: providerId,
+            serviceName: serviceName,
+            providerName: providerName,
+            price: price,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tracking',
+        builder: (context, state) {
+          final bookingId = state.uri.queryParameters['bookingId'] ?? '';
+          final providerName = state.uri.queryParameters['providerName'] ?? '';
+          final serviceName = state.uri.queryParameters['serviceName'] ?? '';
+          final address = state.uri.queryParameters['address'] ?? '';
+          return RealTimeTrackingPage(
+            bookingId: bookingId,
+            providerName: providerName,
+            serviceName: serviceName,
+            address: address,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/payment-methods',
+        builder: (context, state) => const PaymentMethodsPage(),
+      ),
+      GoRoute(
+        path: '/bookings-history',
+        builder: (context, state) => const BookingsHistoryPage(),
+      ),
+      GoRoute(
+        path: '/messages',
+        builder: (context, state) => const MessagesPage(),
+      ),
+      // Agent Routes
+      GoRoute(
+        path: '/kyc',
+        builder: (context, state) => const KycPage(),
+      ),
+      GoRoute(
+        path: '/agent-login',
+        builder: (context, state) => const AgentLoginPage(),
+      ),
+      GoRoute(
+        path: '/agent-verification',
+        builder: (context, state) => const AgentVerificationPage(),
+      ),
+      GoRoute(
+        path: '/agent-dashboard',
+        builder: (context, state) => const AgentDashboardPage(),
       ),
     ],
   );

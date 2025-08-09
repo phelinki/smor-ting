@@ -13,15 +13,18 @@ enum UserRole {
 
 @JsonSerializable()
 class User {
+  @JsonKey(fromJson: _idFromJson, toJson: _idToJson)
   final String id;
   final String email;
   @JsonKey(name: 'first_name')
   final String firstName;
   @JsonKey(name: 'last_name')
   final String lastName;
+  @JsonKey(defaultValue: '')
   final String phone;
+  @JsonKey(defaultValue: UserRole.customer)
   final UserRole role;
-  @JsonKey(name: 'is_email_verified')
+  @JsonKey(name: 'is_email_verified', defaultValue: false)
   final bool isEmailVerified;
   @JsonKey(name: 'profile_image')
   final String? profileImage;
@@ -50,6 +53,16 @@ class User {
 
   String get fullName => '$firstName $lastName';
 }
+
+// Custom converters for ID field
+String _idFromJson(dynamic value) {
+  if (value is int) {
+    return value.toString();
+  }
+  return value as String;
+}
+
+String _idToJson(String value) => value;
 
 @JsonSerializable()
 class Address {
