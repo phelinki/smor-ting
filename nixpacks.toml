@@ -9,6 +9,7 @@ nixPkgs = ["go_1_21"]
 
 [phases.install]
 commands = [
+  "go env -w GOPATH=/root/go",
   "go mod download",
 ]
 workingDirectory = "smor_ting_backend"
