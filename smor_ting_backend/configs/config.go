@@ -135,7 +135,7 @@ func LoadConfig() (*Config, error) {
 			RateLimitWindow:      getDurationEnv("RATE_LIMIT_WINDOW", 1*time.Minute),
 		},
 		CORS: CORSConfig{
-			AllowOrigins:     getStringSliceEnv("CORS_ALLOW_ORIGINS", []string{"*"}),
+			AllowOrigins:     getStringSliceEnv("CORS_ALLOW_ORIGINS", getDefaultCORSOrigins()),
 			AllowHeaders:     getStringSliceEnv("CORS_ALLOW_HEADERS", []string{"Origin", "Content-Type", "Accept", "Authorization", "CF-Connecting-IP"}),
 			AllowMethods:     getStringSliceEnv("CORS_ALLOW_METHODS", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 			AllowCredentials: getBoolEnv("CORS_ALLOW_CREDENTIALS", true),
@@ -296,6 +296,32 @@ func (c *Config) IsStaging() bool {
 }
 
 // Helper functions for environment variable parsing
+
+// getDefaultCORSOrigins returns appropriate CORS origins based on environment
+func getDefaultCORSOrigins() []string {
+	env := os.Getenv("ENV")
+	switch env {
+	case "production":
+		return []string{
+			"https://smor-ting.com",
+			"https://www.smor-ting.com",
+			"https://api.smor-ting.com",
+		}
+	case "staging":
+		return []string{
+			"https://staging.smor-ting.com",
+			"https://api-staging.smor-ting.com",
+			"http://localhost:3000",
+		}
+	default: // development
+		return []string{
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"http://localhost:8080",
+			"http://127.0.0.1:8080",
+		}
+	}
+}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
