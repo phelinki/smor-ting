@@ -69,7 +69,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	// Register user through MongoDB service
 	response, err := h.authService.Register(c.Context(), &req)
 	if err != nil {
-		h.logger.Error("Failed to register user", err, zap.String("email", req.Email))
+		h.logger.Error("Failed to register user", err, zap.String("email", req.Email), zap.String("error_details", err.Error()))
 
 		// Handle specific errors
 		if err.Error() == "user with email "+req.Email+" already exists" {
@@ -79,9 +79,11 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 			})
 		}
 
+		// For debugging: return more detailed error information
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Registration failed",
 			"message": "Failed to register user",
+			"debug_error": err.Error(), // Add this temporarily for debugging
 		})
 	}
 
