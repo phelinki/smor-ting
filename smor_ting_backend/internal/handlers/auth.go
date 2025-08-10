@@ -43,6 +43,56 @@ type RefreshTokenResponse struct {
 	ExpiresIn    int64  `json:"expires_in"`
 }
 
+// Register handles user registration with enhanced security
+func (h *AuthHandler) Register(c *fiber.Ctx) error {
+	var req models.RegisterRequest
+
+	// Parse request body
+	if err := c.BodyParser(&req); err != nil {
+		h.logger.Error("Failed to parse register request body", err)
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Invalid request body",
+			"message": "Failed to parse request body",
+		})
+	}
+
+	// Register user through MongoDB service
+	response, err := h.authService.Register(c.Context(), &req)
+	if err != nil {
+		h.logger.Error("Failed to register user", err, zap.String("email", req.Email))
+
+		// Handle specific errors
+		if err.Error() == "user with email "+req.Email+" already exists" {
+			return c.Status(http.StatusConflict).JSON(fiber.Map{
+				"error":   "User already exists",
+				"message": "A user with this email already exists",
+			})
+		}
+
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Registration failed",
+			"message": "Failed to register user",
+		})
+	}
+
+	// If registration successful, generate enhanced token pair
+	if response.AccessToken != "" {
+		// User is already authenticated, generate new token pair with JWT service
+		tokenPair, err := h.jwtService.GenerateTokenPair(&response.User)
+		if err != nil {
+			h.logger.Error("Failed to generate token pair after registration", err)
+			// Continue with the original token from auth service
+		} else {
+			// Use enhanced tokens
+			response.AccessToken = tokenPair.AccessToken
+			response.RefreshToken = tokenPair.RefreshToken
+		}
+	}
+
+	h.logger.Info("User registered successfully", zap.String("email", req.Email))
+	return c.Status(http.StatusCreated).JSON(response)
+}
+
 // Login handles user login with enhanced security
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req struct {

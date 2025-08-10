@@ -447,7 +447,7 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 
 	// Auth routes (no authentication required)
 	auth := api.Group("/auth")
-	auth.Post("/register", a.authHdl.Register)
+	auth.Post("/register", a.authHandler.Register)      // Using enhanced auth handler for consistency
 	auth.Post("/login", a.authHandler.Login)            // Using enhanced auth handler
 	auth.Post("/validate", a.authHandler.ValidateToken) // Using enhanced auth handler
 	auth.Post("/refresh", a.authHandler.RefreshToken)   // New refresh endpoint

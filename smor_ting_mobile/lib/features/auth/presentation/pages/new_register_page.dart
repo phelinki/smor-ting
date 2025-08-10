@@ -120,6 +120,27 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
+    // Listen to auth state changes for navigation
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next is Authenticated) {
+        final role = next.user.role;
+        if (role == UserRole.provider || role == UserRole.admin) {
+          context.go('/agent-dashboard');
+        } else {
+          context.go('/home');
+        }
+      } else if (next is RequiresOTP) {
+        context.go('/verify-otp?email=${next.email}&fullName=${next.user.fullName}');
+      } else if (next is Error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
