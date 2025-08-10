@@ -173,6 +173,13 @@ func (h *MongoDBHandler) validateRegisterRequest(req *models.RegisterRequest) er
 	if req.Phone == "" {
 		return fmt.Errorf("phone is required")
 	}
+	if req.Role == "" {
+		return fmt.Errorf("role is required")
+	}
+	// Validate role is one of the allowed values
+	if req.Role != models.CustomerRole && req.Role != models.ProviderRole && req.Role != models.AdminRole {
+		return fmt.Errorf("role must be 'customer', 'provider', or 'admin'")
+	}
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -56,6 +57,15 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		})
 	}
 
+	// Validate request
+	if err := h.validateRegisterRequest(&req); err != nil {
+		h.logger.Warn("Invalid register request", zap.String("error", err.Error()))
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Validation failed",
+			"message": err.Error(),
+		})
+	}
+
 	// Register user through MongoDB service
 	response, err := h.authService.Register(c.Context(), &req)
 	if err != nil {
@@ -91,6 +101,36 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 	h.logger.Info("User registered successfully", zap.String("email", req.Email))
 	return c.Status(http.StatusCreated).JSON(response)
+}
+
+// validateRegisterRequest validates a registration request
+func (h *AuthHandler) validateRegisterRequest(req *models.RegisterRequest) error {
+	if req.Email == "" {
+		return fmt.Errorf("email is required")
+	}
+	if req.Password == "" {
+		return fmt.Errorf("password is required")
+	}
+	if len(req.Password) < 6 {
+		return fmt.Errorf("password must be at least 6 characters long")
+	}
+	if req.FirstName == "" {
+		return fmt.Errorf("first name is required")
+	}
+	if req.LastName == "" {
+		return fmt.Errorf("last name is required")
+	}
+	if req.Phone == "" {
+		return fmt.Errorf("phone is required")
+	}
+	if req.Role == "" {
+		return fmt.Errorf("role is required")
+	}
+	// Validate role is one of the allowed values
+	if req.Role != models.CustomerRole && req.Role != models.ProviderRole && req.Role != models.AdminRole {
+		return fmt.Errorf("role must be 'customer', 'provider', or 'admin'")
+	}
+	return nil
 }
 
 // Login handles user login with enhanced security
