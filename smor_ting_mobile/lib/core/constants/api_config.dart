@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiConfig {
   // Environment-based API URLs
-  static const String _devBaseUrl = 'http://127.0.0.1:8080/api/v1';
+  static const String _devBaseUrl = 'https://api.smor-ting.com/api/v1';
   static const String _stagingBaseUrl = 'https://api.smor-ting.com/api/v1';
   static const String _productionBaseUrl = 'https://api.smor-ting.com/api/v1';
   

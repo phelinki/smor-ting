@@ -9,13 +9,20 @@ export default {
     const isAuth = url.pathname.startsWith('/api/v1/auth')
     const isWebhooks = url.pathname.startsWith('/api/v1/webhooks')
 
-    const upstream = new URL(env.UPSTREAM_ORIGIN || '')
+    const upstreamBase = env.UPSTREAM_ORIGIN as string
+    if (!upstreamBase) {
+      return new Response('Missing UPSTREAM_ORIGIN', { status: 500 })
+    }
+    const upstream = new URL(upstreamBase)
     upstream.pathname = url.pathname
     upstream.search = url.search
 
+    // Rebuild headers without forwarding Host to avoid upstream mismatch
+    const forwardHeaders = new Headers(request.headers)
+    forwardHeaders.delete('host')
     const init: RequestInit = {
       method: request.method,
-      headers: request.headers,
+      headers: forwardHeaders,
     }
     if (!['GET', 'HEAD'].includes(request.method)) {
       init.body = await request.clone().arrayBuffer()
@@ -43,6 +50,9 @@ export default {
     headers.set('Referrer-Policy', 'no-referrer')
     headers.set('Server', 'edge')
 
+    if (request.method === 'HEAD') {
+      return new Response(null, { status: response.status, headers })
+    }
     const copied = new Response(response.body, { status: response.status, headers })
 
     if (!isAuth && !isWebhooks && request.method === 'GET' && response.ok) {

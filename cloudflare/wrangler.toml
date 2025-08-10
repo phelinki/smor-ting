@@ -3,10 +3,9 @@ main = "src/worker.ts"
 compatibility_date = "2024-05-25"
 
 account_id = "79b2d1445dc45e3d44d66dd40b6d8474"
-workers_dev = true
+workers_dev = false
 
-[vars]
-UPSTREAM_ORIGIN = ""
+
 
 [[routes]]
 pattern = "api.smor-ting.com/*"

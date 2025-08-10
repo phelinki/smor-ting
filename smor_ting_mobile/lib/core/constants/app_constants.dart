@@ -81,7 +81,8 @@ class AppConstants {
   // Validation Messages
   static const String requiredFieldMessage = 'This field is required.';
   static const String invalidEmailMessage = 'Please enter a valid email address.';
-  static const String invalidPhoneMessage = 'Please enter a valid phone number.';
+  static const String invalidPhoneMessage = 'Please enter a valid Liberian phone number.';
+  static const String phoneFormatHint = 'Format: +231xxxxxxxxx or 77xxxxxxx (9 digits)';
   static const String passwordTooShortMessage = 'Password must be at least 8 characters.';
   static const String passwordMismatchMessage = 'Passwords do not match.';
   

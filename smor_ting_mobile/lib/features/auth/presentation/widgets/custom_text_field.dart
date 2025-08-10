@@ -50,18 +50,21 @@ class CustomTextField extends StatelessWidget {
       onChanged: onChanged,
       inputFormatters: inputFormatters,
       validator: validator,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Poppins',
-        color: AppTheme.darkGray,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
+      cursorColor: Theme.of(context).colorScheme.primary,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
+        hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+        labelStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
         prefixIcon: prefixIcon != null
             ? Icon(
                 prefixIcon,
-                color: AppTheme.gray,
+                color: Theme.of(context).hintColor,
                 size: 20,
               )
             : null,

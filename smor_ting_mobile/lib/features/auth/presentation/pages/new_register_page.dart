@@ -86,7 +86,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
     
     // Check if it's a valid Liberia phone number
     if (!RegExp(AppConstants.liberiaPhonePattern).hasMatch(cleanPhone)) {
-      return AppConstants.invalidPhoneMessage;
+      return '${AppConstants.invalidPhoneMessage}\n${AppConstants.phoneFormatHint}';
     }
     
     return null;
@@ -238,6 +238,18 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     FilteringTextInputFormatter.digitsOnly,
                   ],
                   validator: _validatePhone,
+                ),
+                
+                // Phone format helper text
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 16.0),
+                  child: Text(
+                    AppConstants.phoneFormatHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
                 
                 const SizedBox(height: 20),

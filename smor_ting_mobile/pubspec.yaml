@@ -98,6 +98,9 @@ dev_dependencies:
   # Linting & Formatting
   flutter_lints: ^3.0.0
 
+  # App icon generation
+  flutter_launcher_icons: ^0.13.1
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -140,3 +143,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  ios: true
+  image_path: assets/images/smor_ting_logo.png
+  remove_alpha_ios: true
