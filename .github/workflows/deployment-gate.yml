@@ -155,9 +155,9 @@ jobs:
       uses: actions/checkout@v4
     
     - name: 🐹 Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.23.x'
     
     - name: 🔧 Build Backend
       working-directory: ./smor_ting_backend
@@ -269,7 +269,7 @@ jobs:
         fi
     
     - name: 📤 Upload Release Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: mobile-release-${{ needs.check-qa-status.outputs.target-env }}
         path: |

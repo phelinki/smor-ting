@@ -1,9 +1,11 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "go build -o server ./cmd"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "./server"
+startCommand = "./smor-ting-api"
 healthcheckPath = "/health"
-restartPolicyType = "on-failure"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 

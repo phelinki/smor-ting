@@ -1,7 +1,8 @@
-# Nixpacks config for monorepo: build the Go backend in smor_ting_backend
+# DEPRECATED: nixpacks.toml - Using Dockerfile instead
+# This file is kept for reference but Railway will use Dockerfile
+# To use this instead, remove the Dockerfile from smor_ting_backend/
 
 [variables]
-# Railway provides PORT; do not override. Keep for local builds if needed.
 PORT = "8080"
 
 [phases.setup]
@@ -16,11 +17,11 @@ workingDirectory = "smor_ting_backend"
 
 [phases.build]
 commands = [
-  "go build -o server ./cmd",
+  "go build -o smor-ting-api ./cmd",
 ]
 workingDirectory = "smor_ting_backend"
 
 [start]
-cmd = "./server"
+cmd = "./smor-ting-api"
 workingDirectory = "smor_ting_backend"
 
