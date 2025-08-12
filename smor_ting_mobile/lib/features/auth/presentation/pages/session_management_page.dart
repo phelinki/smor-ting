@@ -65,7 +65,7 @@ class _SessionManagementPageState extends ConsumerState<SessionManagementPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Signed out from $deviceName'),
-            backgroundColor: AppTheme.success,
+            backgroundColor: AppTheme.successGreen,
           ),
         );
       }

@@ -7,8 +7,11 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/enhanced_auth_service.dart';
+import '../../../../core/services/message_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/enhanced_auth_provider.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/enhanced_login_outcomes.dart';
 
 class NewLoginPage extends ConsumerStatefulWidget {
   const NewLoginPage({super.key});
@@ -26,6 +29,13 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
   bool _isLoading = false;
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
+  
+  // Enhanced login outcome states
+  bool _showCooldown = false;
+  bool _showCaptcha = false;
+  bool _showTwoFactor = false;
+  int _cooldownSeconds = 0;
+  int _remainingAttempts = 0;
 
   @override
   void initState() {
@@ -80,12 +90,69 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
 
     setState(() {
       _isLoading = true;
+      _resetEnhancedStates();
     });
 
     try {
-      await ref.read(authNotifierProvider.notifier).login(
-        _usernameController.text.trim(),
-        _passwordController.text,
+      final enhancedAuthNotifier = ref.read(enhancedAuthNotifierProvider.notifier);
+      await enhancedAuthNotifier.enhancedLogin(
+        email: _usernameController.text.trim(),
+        password: _passwordController.text,
+        rememberMe: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _resetEnhancedStates() {
+    setState(() {
+      _showCooldown = false;
+      _showCaptcha = false;
+      _showTwoFactor = false;
+      _cooldownSeconds = 0;
+      _remainingAttempts = 0;
+    });
+  }
+
+  void _handleCaptchaCompleted(String token) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final enhancedAuthNotifier = ref.read(enhancedAuthNotifierProvider.notifier);
+      await enhancedAuthNotifier.enhancedLogin(
+        email: _usernameController.text.trim(),
+        password: _passwordController.text,
+        rememberMe: true,
+        captchaToken: token,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _handleTwoFactorSubmitted(String code) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final enhancedAuthNotifier = ref.read(enhancedAuthNotifierProvider.notifier);
+      await enhancedAuthNotifier.enhancedLogin(
+        email: _usernameController.text.trim(),
+        password: _passwordController.text,
+        rememberMe: true,
+        twoFactorCode: code,
       );
     } finally {
       if (mounted) {
@@ -130,21 +197,21 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.message ?? 'Biometric authentication failed'),
-              backgroundColor: Colors.red,
-            ),
+          MessageService.showError(
+            context,
+            message: result.message ?? 'Biometric authentication failed',
+            canRetry: true,
+            onRetry: _handleBiometricLogin,
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Biometric authentication failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        MessageService.showError(
+          context,
+          message: 'Biometric authentication failed',
+          canRetry: true,
+          onRetry: _handleBiometricLogin,
         );
       }
     } finally {
@@ -175,36 +242,65 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final enhancedAuthState = ref.watch(enhancedAuthNotifierProvider);
 
-    // Listen to auth state changes
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next is Authenticated) {
-        final role = next.user.role;
-        if (role == UserRole.provider || role == UserRole.admin) {
-          context.go('/agent-dashboard');
-        } else {
-          context.go('/home');
-        }
-      } else if (next is RequiresOTP) {
-        context.go('/verify-otp?email=${next.email}&fullName=${next.user.fullName}');
-      } else if (next is Error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.message),
-            backgroundColor: AppTheme.error,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: AppTheme.white,
-              onPressed: () {
-                if (!_isLoading) {
-                  _handleLogin();
-                }
-              },
-            ),
-          ),
-        );
-      }
+    // Listen to enhanced auth state changes
+    ref.listen<EnhancedAuthState>(enhancedAuthNotifierProvider, (previous, next) {
+      next.when(
+        initial: () {},
+        loading: () {},
+        unauthenticated: () {},
+        authenticated: (user, accessToken, sessionId, deviceTrusted, isRestoredSession, requiresVerification) {
+          if (requiresVerification == true) {
+            context.go('/verify-otp?email=${user.email}&fullName=${user.fullName}');
+          } else {
+            final role = user.role;
+            if (role == UserRole.provider || role == UserRole.admin) {
+              context.go('/agent-dashboard');
+            } else {
+              context.go('/home');
+            }
+          }
+        },
+        requiresTwoFactor: (email, tempUser, deviceTrusted) {
+          setState(() {
+            _showTwoFactor = true;
+            _showCaptcha = false;
+            _showCooldown = false;
+          });
+        },
+        requiresCaptcha: (email, remainingAttempts, lockoutInfo) {
+          setState(() {
+            _showCaptcha = true;
+            _showTwoFactor = false;
+            _showCooldown = false;
+            _remainingAttempts = remainingAttempts;
+          });
+        },
+        lockedOut: (lockoutInfo, message) {
+          setState(() {
+            _showCooldown = true;
+            _showCaptcha = false;
+            _showTwoFactor = false;
+            _cooldownSeconds = lockoutInfo.timeUntilUnlock ?? 300; // Default 5 minutes
+          });
+        },
+        error: (message, canRetry) {
+          MessageService.showError(
+            context,
+            message: message,
+            canRetry: canRetry,
+            onRetry: canRetry ? () {
+              if (!_isLoading) {
+                _handleLogin();
+              }
+            } : null,
+          );
+        },
+        requiresVerification: (user, email) {
+          context.go('/verify-otp?email=$email&fullName=${user.fullName}');
+        },
+      );
     });
 
     return Scaffold(
@@ -313,6 +409,17 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 ),
                 
                 const SizedBox(height: 32),
+
+                // Enhanced Login Outcomes
+                EnhancedLoginOutcomes(
+                  showCooldown: _showCooldown,
+                  showCaptcha: _showCaptcha,
+                  showTwoFactor: _showTwoFactor,
+                  cooldownSeconds: _cooldownSeconds,
+                  remainingAttempts: _remainingAttempts,
+                  onCaptchaCompleted: _handleCaptchaCompleted,
+                  onTwoFactorSubmitted: _handleTwoFactorSubmitted,
+                ),
                 
                 // Sign In Button
                 SizedBox(
@@ -442,25 +549,6 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 ),
 
                 const SizedBox(height: 24),
-                
-                // Error Message
-                if (authState is Error)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      (authState as Error).message,
-                      style: const TextStyle(
-                        color: AppTheme.error,
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
               ],
             ),
           ),

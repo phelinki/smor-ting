@@ -4,7 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
-import 'features/navigation/presentation/app_router.dart';
+import 'features/navigation/presentation/enhanced_app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +24,7 @@ class SmorTingApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(appRouterProvider);
+    final router = ref.watch(enhancedAppRouterProvider);
     
     return MaterialApp.router(
       title: AppConstants.appName,

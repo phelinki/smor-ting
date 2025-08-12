@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/service.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/verification_gated_page.dart';
 import '../../../wallet/presentation/pages/wallet_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -19,11 +20,26 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const _ServicesPage(),
-    const _BookingsPage(),
-    const _MessagesPage(),
-    const WalletPage(),
-    const _ProfilePage(),
+    withVerificationGating(
+      child: const _ServicesPage(),
+      route: '/home',
+    ),
+    withVerificationGating(
+      child: const _BookingsPage(),
+      route: '/booking',
+    ),
+    withVerificationGating(
+      child: const _MessagesPage(),
+      route: '/messages',
+    ),
+    withVerificationGating(
+      child: const WalletPage(),
+      route: '/wallet',
+    ),
+    withVerificationGating(
+      child: const _ProfilePage(),
+      route: '/profile',
+    ),
   ];
 
   @override

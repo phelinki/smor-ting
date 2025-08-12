@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../../core/services/enhanced_auth_service.dart';
+import '../../../../core/models/user.dart';
+import '../../../auth/presentation/providers/enhanced_auth_provider.dart';
+import '../widgets/biometric_settings_widget.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -18,44 +21,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _smsNotifications = false;
   bool _locationServices = true;
   bool _darkMode = false;
-  bool _biometricAuth = false;
-  bool _biometricAvailable = false;
+
   String _language = 'English';
   String _currency = 'USD';
 
-  @override
-  void initState() {
-    super.initState();
-    _checkBiometricAvailability();
-  }
 
-  Future<void> _checkBiometricAvailability() async {
-    try {
-      final authService = ref.read(enhancedAuthServiceProvider);
-      final isAvailable = await authService.canUseBiometrics();
-      final availableBiometrics = await authService.getAvailableBiometrics();
-      
-      // Check if user has biometric enabled
-      // For now, we'll use a placeholder email - in a real app, get from current user
-      const userEmail = 'user@example.com'; // TODO: Get from current user session
-      final isEnabled = await authService.isBiometricEnabled(userEmail);
-      
-      if (mounted) {
-        setState(() {
-          _biometricAvailable = isAvailable && availableBiometrics.isNotEmpty;
-          _biometricAuth = isEnabled;
-        });
-      }
-    } catch (e) {
-      // Biometric not available or error occurred
-      if (mounted) {
-        setState(() {
-          _biometricAvailable = false;
-          _biometricAuth = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +92,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
             const SizedBox(height: 16),
 
+            // Biometric Authentication Section
+            Consumer(
+              builder: (context, ref, child) {
+                final authState = ref.watch(enhancedAuthNotifierProvider);
+                return authState.maybeWhen(
+                  authenticated: (user, _, __, ___, ____, _____) {
+                    return BiometricSettingsWidget(userEmail: user.email);
+                  },
+                  orElse: () => const SizedBox.shrink(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 16),
+
             // Privacy & Security Section
             _SettingsSection(
               title: 'Privacy & Security',
@@ -136,15 +121,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     });
                   },
                 ),
-                if (_biometricAvailable)
-                  _SettingsSwitchTile(
-                    title: 'Biometric Authentication',
-                    subtitle: 'Use fingerprint or face unlock to secure your account',
-                    value: _biometricAuth,
-                    onChanged: (value) async {
-                      await _toggleBiometricAuth(value);
-                    },
-                  ),
                 _SettingsTile(
                   title: 'Change Password',
                   subtitle: 'Update your account password',
@@ -167,6 +143,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.security,
                   onTap: () {
                     // TODO: Navigate to 2FA setup
+                  },
+                ),
+                _SettingsTile(
+                  title: 'Manage Sessions',
+                  subtitle: 'View active sessions and sign out from devices',
+                  icon: Icons.devices,
+                  onTap: () {
+                    context.push('/sessions');
                   },
                 ),
               ],
@@ -291,55 +275,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Future<void> _toggleBiometricAuth(bool enable) async {
-    try {
-      final authService = ref.read(enhancedAuthServiceProvider);
-      const userEmail = 'user@example.com'; // TODO: Get from current user session
-      
-      final success = await authService.setBiometricEnabled(userEmail, enable);
-      
-      if (success) {
-        setState(() {
-          _biometricAuth = enable;
-        });
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                enable 
-                  ? 'Biometric authentication enabled successfully' 
-                  : 'Biometric authentication disabled successfully'
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                enable 
-                  ? 'Failed to enable biometric authentication. Please try again.' 
-                  : 'Failed to disable biometric authentication. Please try again.'
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+
 
   void _showChangePasswordDialog() {
     final currentPasswordController = TextEditingController();
