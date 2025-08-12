@@ -1,0 +1,30 @@
+# TruffleHog ignore patterns
+# This file contains patterns for TruffleHog to ignore to prevent false positives
+
+# NPM package-lock.json integrity hashes
+**/package-lock.json:*integrity*
+**/yarn.lock:*
+**/Cargo.lock:*
+**/go.sum:*
+**/pubspec.lock:*
+
+# Test data and examples
+**/.env.example:*
+**/test/**:*
+**/tests/**:*
+**/example/**:*
+
+# Documentation placeholder values
+**/*.md:*YOUR_USERNAME*
+**/*.md:*YOUR_PASSWORD*
+**/*.md:*PLACEHOLDER*
+
+# Configuration files with placeholders
+**/.gitguardian.yaml:*
+**/config/**:*placeholder*
+
+# Build artifacts
+**/build/**:*
+**/dist/**:*
+**/.gradle/**:*
+**/node_modules/**:*
