@@ -1,0 +1,16 @@
+# GitGuardian configuration file
+# https://docs.gitguardian.com/secrets-detection/detectors/generics/generic_high_entropy_secret
+
+version: v1
+
+paths-ignore:
+  - "**/package-lock.json"     # npm integrity hashes
+  - "**/yarn.lock"             # yarn integrity hashes  
+  - "**/Cargo.lock"            # rust integrity hashes
+  - "**/go.sum"                # go module checksums
+  - "**/pubspec.lock"          # dart/flutter integrity hashes
+
+# Exclude npm integrity hashes specifically
+matches-ignore:
+  - name: NPM integrity hashes
+    match: sha512-[A-Za-z0-9+/]+=*
