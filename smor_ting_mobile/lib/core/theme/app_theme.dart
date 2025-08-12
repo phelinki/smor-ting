@@ -17,6 +17,11 @@ class AppTheme {
   static const Color gray = Color(0xFF8E8E93);  // Apple's gray
   static const Color warning = Color(0xFFFF9500);  // Apple's orange
   static const Color error = Color(0xFFFF3B30);  // Using red for errors
+  
+  // Aliases for backward compatibility
+  static const Color success = successGreen;
+  static const Color backgroundLight = lightGray;
+  static const Color primary = primaryRed;
 
   // Light Theme
   static ThemeData lightTheme = ThemeData(

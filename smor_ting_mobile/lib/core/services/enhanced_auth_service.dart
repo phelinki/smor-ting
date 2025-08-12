@@ -223,7 +223,7 @@ class EnhancedAuthService {
         await _sessionManager.storeSession(updatedSession);
         _apiService.setAuthToken(updatedSession.accessToken);
 
-        return EnhancedAuthResult.fromResponse(response);
+        return response;
       }
 
       return null;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/enhanced_auth_service.dart';
+import '../../../../core/models/enhanced_auth_models.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/enhanced_auth_provider.dart';
 

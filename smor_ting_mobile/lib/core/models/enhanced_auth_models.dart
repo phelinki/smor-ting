@@ -2,6 +2,8 @@ import 'package:json_annotation/json_annotation.dart';
 import 'user.dart';
 import '../services/device_fingerprint_service.dart' show DeviceFingerprint;
 
+// SessionInfo and LockoutInfo are defined in this file and automatically exported
+
 part 'enhanced_auth_models.g.dart';
 
 @JsonSerializable()
@@ -82,4 +84,48 @@ class EnhancedAuthResult {
   }
 
   Map<String, dynamic> toJson() => _$EnhancedAuthResultToJson(this);
+}
+
+@JsonSerializable()
+class SessionInfo {
+  final String sessionId;
+  final String deviceName;
+  final String deviceType;
+  final String ipAddress;
+  final DateTime lastActivity;
+  final DateTime createdAt;
+  final bool isCurrent;
+
+  const SessionInfo({
+    required this.sessionId,
+    required this.deviceName,
+    required this.deviceType,
+    required this.ipAddress,
+    required this.lastActivity,
+    required this.createdAt,
+    this.isCurrent = false,
+  });
+
+  factory SessionInfo.fromJson(Map<String, dynamic> json) =>
+      _$SessionInfoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SessionInfoToJson(this);
+}
+
+@JsonSerializable()
+class LockoutInfo {
+  final DateTime lockedUntil;
+  final int remainingAttempts;
+  final int? timeUntilUnlock;
+
+  const LockoutInfo({
+    required this.lockedUntil,
+    required this.remainingAttempts,
+    this.timeUntilUnlock,
+  });
+
+  factory LockoutInfo.fromJson(Map<String, dynamic> json) =>
+      _$LockoutInfoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LockoutInfoToJson(this);
 }

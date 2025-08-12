@@ -22,7 +22,7 @@ class ConsentService {
   Future<List<ConsentRequirement>> getConsentRequirements() async {
     try {
       final response = await _apiService.get('/api/v1/consent/requirements');
-      final requirementsList = response['requirements'] as List;
+      final requirementsList = response.data['requirements'] as List;
       return requirementsList
           .map((json) => ConsentRequirement.fromJson(json))
           .toList();
@@ -37,7 +37,7 @@ class ConsentService {
     try {
       // Try to get from API first
       final response = await _apiService.get('/api/v1/consent/user/$userId');
-      return UserConsent.fromJson(response);
+      return UserConsent.fromJson(response.data);
     } catch (e) {
       // Fallback to local storage
       return await _getLocalConsent(userId);
@@ -70,7 +70,7 @@ class ConsentService {
 
     try {
       // Send to API
-      await _apiService.post('/api/v1/consent/user/$userId', request.toJson());
+      await _apiService.post('/api/v1/consent/user/$userId', data: request.toJson());
       
       // Update local storage
       await _updateLocalConsent(userId, type, granted, requirement.version);
@@ -110,7 +110,7 @@ class ConsentService {
 
     try {
       // Send batch update to API
-      await _apiService.post('/api/v1/consent/user/$userId/batch', {
+      await _apiService.post('/api/v1/consent/user/$userId/batch', data: {
         'updates': updates.map((u) => u.toJson()).toList(),
       });
 
@@ -187,7 +187,7 @@ class ConsentService {
         try {
           await _apiService.post(
             '/api/v1/consent/user/${entry.key}',
-            entry.value.toJson(),
+            data: entry.value.toJson(),
           );
         } catch (e) {
           // Skip failed syncs for now

@@ -130,6 +130,28 @@ class AuthNotifier extends _$AuthNotifier {
       state = AuthState.error(e.toString());
     }
   }
+
+  void setAuthenticatedUser(User user, String accessToken) {
+    final apiService = ref.read(apiServiceProvider);
+    apiService.setAuthToken(accessToken);
+    state = AuthState.authenticated(user, accessToken);
+  }
+
+  void clearError() {
+    if (state is Error) {
+      state = const AuthState.initial();
+    }
+  }
+
+  void logout() {
+    final apiService = ref.read(apiServiceProvider);
+    apiService.clearAuthToken();
+    state = const AuthState.initial();
+  }
+
+  void resetToInitial() {
+    state = const AuthState.initial();
+  }
 }
 
 // Auth State
