@@ -35,6 +35,7 @@ func NewAuthHandler(jwtService *services.JWTRefreshService, encryptionService *s
 // RefreshTokenRequest represents a token refresh request
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
+	SessionID    string `json:"session_id,omitempty"` // Optional for backward compatibility
 }
 
 // RefreshTokenResponse represents a token refresh response

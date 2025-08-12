@@ -8,17 +8,26 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/smorting/backend/internal/models"
-	"github.com/smorting/backend/internal/services"
 	"go.uber.org/zap"
 )
 
 // EnhancedAuthHandler provides comprehensive authentication endpoints
 type EnhancedAuthHandler struct {
-	authService    *services.EnhancedAuthService
+	authService    EnhancedAuthService
 	userService    UserService
 	otpService     OTPService
 	captchaService CaptchaService
 	logger         *zap.Logger
+}
+
+// EnhancedAuthService interface for enhanced authentication operations
+type EnhancedAuthService interface {
+	EnhancedLogin(req *models.EnhancedLoginRequest, clientIP string) (*models.EnhancedAuthResult, error)
+	BiometricLogin(sessionID, biometricData string) (*models.EnhancedAuthResult, error)
+	GetUserSessions(userID string) ([]*models.SessionInfo, error)
+	RevokeSession(sessionID string) error
+	SignOutAllDevices(userID string) error
+	RefreshTokenWithSession(refreshToken, sessionID string) (*models.EnhancedAuthResult, error)
 }
 
 // UserService interface for user operations
@@ -42,7 +51,7 @@ type CaptchaService interface {
 
 // NewEnhancedAuthHandler creates a new enhanced authentication handler
 func NewEnhancedAuthHandler(
-	authService *services.EnhancedAuthService,
+	authService EnhancedAuthService,
 	userService UserService,
 	otpService OTPService,
 	captchaService CaptchaService,
@@ -58,14 +67,7 @@ func NewEnhancedAuthHandler(
 }
 
 // Enhanced login request structure
-type EnhancedLoginRequest struct {
-	Email         string                     `json:"email" validate:"required,email"`
-	Password      string                     `json:"password" validate:"required"`
-	RememberMe    bool                       `json:"remember_me"`
-	DeviceInfo    services.DeviceFingerprint `json:"device_info"`
-	CaptchaToken  string                     `json:"captcha_token,omitempty"`
-	TwoFactorCode string                     `json:"two_factor_code,omitempty"`
-}
+// Note: EnhancedLoginRequest is now defined in models/enhanced_auth.go
 
 // Enhanced login response structure
 type EnhancedLoginResponse struct {
@@ -81,13 +83,13 @@ type EnhancedLoginResponse struct {
 	RequiresVerification bool                  `json:"requires_verification"`
 	RequiresCaptcha      bool                  `json:"requires_captcha"`
 	DeviceTrusted        bool                  `json:"device_trusted"`
-	LockoutInfo          *services.LockoutInfo `json:"lockout_info,omitempty"`
+	LockoutInfo          *models.LockoutInfo `json:"lockout_info,omitempty"`
 	RemainingAttempts    int                   `json:"remaining_attempts,omitempty"`
 }
 
 // EnhancedLogin handles comprehensive login with all security features
 func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
-	var req EnhancedLoginRequest
+	var req models.EnhancedLoginRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		h.logger.Error("Failed to parse login request", zap.Error(err))
@@ -161,7 +163,7 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	}
 
 	// Verify password
-	if err := h.userService.VerifyPassword(req.Password, user.PasswordHash); err != nil {
+	if err := h.userService.VerifyPassword(req.Password, user.Password); err != nil {
 		h.logger.Warn("Login attempt with invalid password",
 			zap.String("email", req.Email),
 			zap.String("ip", clientIP),
@@ -270,11 +272,7 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	})
 }
 
-// RefreshTokenRequest for token refresh
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-	SessionID    string `json:"session_id" validate:"required"`
-}
+// Note: RefreshTokenRequest is defined in auth.go, extending it for enhanced auth
 
 // RefreshToken handles token refresh with session validation
 func (h *EnhancedAuthHandler) RefreshToken(c *fiber.Ctx) error {

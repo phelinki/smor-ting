@@ -289,13 +289,18 @@ func (a *App) initializeSecurityServices() error {
 	a.authHandler = authHandler
 
 	// Initialize enhanced auth handler for biometric and advanced auth features
-	// For now, we'll use stub implementations for the missing interfaces
+	// Using stub implementations for development
+	stubEnhancedAuthService := services.NewStubEnhancedAuthService(a.logger.Logger)
+	stubUserService := services.NewUserServiceAdapter(a.authSvc)
+	stubOTPService := services.NewStubOTPService(a.logger.Logger)
+	stubCaptchaService := services.NewStubCaptchaService(a.logger.Logger)
+	
 	enhancedAuthHandler := handlers.NewEnhancedAuthHandler(
-		nil,       // Enhanced auth service - will be implemented later
-		a.authSvc, // User service (reusing existing auth service)
-		a.authSvc, // OTP service (reusing existing auth service)
-		nil,       // Captcha service - stub for now
-		a.logger,
+		stubEnhancedAuthService,
+		stubUserService,
+		stubOTPService,
+		stubCaptchaService,
+		a.logger.Logger,
 	)
 	a.enhancedAuthHandler = enhancedAuthHandler
 
