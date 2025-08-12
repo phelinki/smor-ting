@@ -21,9 +21,9 @@ cd smor_ting_backend
 ### 3. Update Environment
 Edit `.env` file with your connection string:
 ```bash
-MONGODB_URI=mongodb+srv://smorting_user:your_password@cluster0.xxxxx.mongodb.net/smor_ting?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
 MONGODB_ATLAS=true
-JWT_SECRET=your-super-secret-key
+JWT_SECRET=YOUR_JWT_SECRET_MIN_32_CHARS
 ```
 
 ### 4. Test Connection

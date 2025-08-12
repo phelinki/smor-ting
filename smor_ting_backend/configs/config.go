@@ -1,10 +1,10 @@
 package configs
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -178,106 +178,211 @@ func (c *Config) validate() error {
 		return fmt.Errorf("server port is required")
 	}
 
+	// Security validation for JWT secrets
 	if c.Auth.JWTSecret == "" {
 		return fmt.Errorf("JWT secret is required")
+	}
+	if err := c.validateSecretSecurity("JWT_SECRET", c.Auth.JWTSecret); err != nil {
+		return err
 	}
 
 	if c.Auth.JWTAccessSecret == "" {
 		return fmt.Errorf("JWT access secret is required")
 	}
+	if err := c.validateSecretSecurity("JWT_ACCESS_SECRET", c.Auth.JWTAccessSecret); err != nil {
+		return err
+	}
 
 	if c.Auth.JWTRefreshSecret == "" {
 		return fmt.Errorf("JWT refresh secret is required")
+	}
+	if err := c.validateSecretSecurity("JWT_REFRESH_SECRET", c.Auth.JWTRefreshSecret); err != nil {
+		return err
 	}
 
 	if c.Security.EncryptionKey == "" {
 		return fmt.Errorf("encryption key is required")
 	}
+	if err := c.validateSecretSecurity("ENCRYPTION_KEY", c.Security.EncryptionKey); err != nil {
+		return err
+	}
 
 	if c.Security.PaymentEncryptionKey == "" {
 		return fmt.Errorf("payment encryption key is required")
 	}
+	if err := c.validateSecretSecurity("PAYMENT_ENCRYPTION_KEY", c.Security.PaymentEncryptionKey); err != nil {
+		return err
+	}
 
-	// In production and staging, fail closed if any critical secret is missing, default, or not valid base64
+	// Database security validation
+	if c.Database.ConnectionString != "" {
+		if err := c.validateDatabaseConnection(); err != nil {
+			return err
+		}
+	}
+
+	// Production-specific validations
 	if c.IsProduction() || c.IsStaging() {
-		// helper closure to check base64 length
-		mustBeBase64 := func(name, value string) error {
-			if value == "" {
-				return fmt.Errorf("%s is required in production", name)
-			}
-			decoded, err := base64.StdEncoding.DecodeString(value)
-			if err != nil {
-				return fmt.Errorf("%s must be base64-encoded: %w", name, err)
-			}
-			if len(decoded) < 32 {
-				return fmt.Errorf("%s must decode to at least 32 bytes", name)
-			}
-			return nil
+		// Database configuration is required in production
+		if c.Database.ConnectionString == "" && !c.Database.InMemory {
+			return fmt.Errorf("MONGODB_URI is required in production")
 		}
 
-		// Must not be default placeholders
-		if c.Auth.JWTAccessSecret == "your-32-byte-access-secret-key-change-in-production" {
-			return fmt.Errorf("JWT_ACCESS_SECRET default value is not allowed in production")
-		}
-		if c.Auth.JWTRefreshSecret == "your-32-byte-refresh-secret-key-change-in-production" {
-			return fmt.Errorf("JWT_REFRESH_SECRET default value is not allowed in production")
-		}
-		if c.Security.EncryptionKey == "your-32-byte-encryption-key-change-in-production" {
-			return fmt.Errorf("ENCRYPTION_KEY default value is not allowed in production")
-		}
-		if c.Security.PaymentEncryptionKey == "your-32-byte-payment-encryption-key-change-in-production" {
-			return fmt.Errorf("PAYMENT_ENCRYPTION_KEY default value is not allowed in production")
-		}
-
-		if err := mustBeBase64("JWT_ACCESS_SECRET", c.Auth.JWTAccessSecret); err != nil {
-			return err
-		}
-		if err := mustBeBase64("JWT_REFRESH_SECRET", c.Auth.JWTRefreshSecret); err != nil {
-			return err
-		}
-		if err := mustBeBase64("ENCRYPTION_KEY", c.Security.EncryptionKey); err != nil {
-			return err
-		}
-		if err := mustBeBase64("PAYMENT_ENCRYPTION_KEY", c.Security.PaymentEncryptionKey); err != nil {
-			return err
-		}
-	}
-
-	// Check for default values and warn
-	if c.Auth.JWTSecret == "your-secret-key-change-in-production" {
-		fmt.Println("WARNING: Using default JWT secret. Change JWT_SECRET in production!")
-	}
-
-	if c.Auth.JWTAccessSecret == "your-32-byte-access-secret-key-change-in-production" {
-		fmt.Println("WARNING: Using default JWT access secret. Change JWT_ACCESS_SECRET in production!")
-	}
-
-	if c.Auth.JWTRefreshSecret == "your-32-byte-refresh-secret-key-change-in-production" {
-		fmt.Println("WARNING: Using default JWT refresh secret. Change JWT_REFRESH_SECRET in production!")
-	}
-
-	if c.Security.EncryptionKey == "your-32-byte-encryption-key-change-in-production" {
-		fmt.Println("WARNING: Using default encryption key. Change ENCRYPTION_KEY in production!")
-	}
-
-	if c.Security.PaymentEncryptionKey == "your-32-byte-payment-encryption-key-change-in-production" {
-		fmt.Println("WARNING: Using default payment encryption key. Change PAYMENT_ENCRYPTION_KEY in production!")
-	}
-
-	// MTN MoMo and KYC configuration checks
-	if c.IsProduction() || c.IsStaging() {
+		// MoMo API validation in production
 		if c.Momo.BaseURL == "" || c.Momo.APIUser == "" || c.Momo.APIKey == "" {
-			return fmt.Errorf("MoMo configuration is required in production")
+			return fmt.Errorf("MTN MoMo API configuration is required in production")
 		}
-		if c.Momo.SubscriptionKeyCollection == "" && c.Momo.SubscriptionKeyDisbursement == "" {
-			return fmt.Errorf("at least one MoMo subscription key is required in production")
-		}
+
+		// KYC validation in production
 		if c.KYC.BaseURL == "" || c.KYC.PartnerID == "" || c.KYC.APIKey == "" {
 			return fmt.Errorf("SmileID KYC configuration is required in production")
 		}
 	}
 
 	return nil
+}
+
+// validateSecretSecurity checks if a secret meets security requirements
+func (c *Config) validateSecretSecurity(name, value string) error {
+	// List of insecure default values that should never be used
+	insecureDefaults := []string{
+		"your-secret-key",
+		"your-secret-key-change-in-production",
+		"your-32-byte-access-secret-key-change-in-production",
+		"your-32-byte-refresh-secret-key-change-in-production",
+		"your-32-byte-encryption-key-change-in-production",
+		"your-32-byte-payment-encryption-key-change-in-production",
+		"YOUR_JWT_SECRET_MIN_32_CHARS",
+		"YOUR_JWT_SECRET_MIN_32_CHARS_GENERATE_WITH_OPENSSL",
+		"YOUR_ACCESS_SECRET_BASE64_ENCODED",
+		"YOUR_REFRESH_SECRET_BASE64_ENCODED",
+		"YOUR_ENCRYPTION_KEY_32_BYTES",
+		"YOUR_PAYMENT_ENCRYPTION_KEY_32_BYTES",
+		"YOUR_PRODUCTION_JWT_SECRET_MIN_32_CHARS",
+		"change-this-in-production",
+		"default",
+		"secret",
+		"password",
+		"123456",
+	}
+
+	// Check if the value is one of the insecure defaults
+	for _, insecure := range insecureDefaults {
+		if value == insecure {
+			return fmt.Errorf("%s contains an insecure default value. Please set a secure value", name)
+		}
+	}
+
+	// Minimum length requirement
+	if len(value) < 32 {
+		return fmt.Errorf("%s must be at least 32 characters long for security", name)
+	}
+
+	// In production/staging, enforce stronger requirements
+	if c.IsProduction() || c.IsStaging() {
+		// Check for common weak patterns
+		if isWeakSecret(value) {
+			return fmt.Errorf("%s appears to be weak. Use a cryptographically secure random value", name)
+		}
+	}
+
+	return nil
+}
+
+// validateDatabaseConnection checks database connection string security
+func (c *Config) validateDatabaseConnection() error {
+	uri := c.Database.ConnectionString
+
+	// Check for insecure placeholder values
+	insecurePlaceholders := []string{
+		"your_password",
+		"your_username",
+		"YOUR_PASSWORD",
+		"YOUR_USERNAME",
+		"password",
+		"username",
+		"smorting_user",
+		"cluster0.xxxxx.mongodb.net",
+		"YOUR_CLUSTER.mongodb.net",
+	}
+
+	for _, placeholder := range insecurePlaceholders {
+		if strings.Contains(uri, placeholder) {
+			return fmt.Errorf("MONGODB_URI contains placeholder values. Please use actual credentials")
+		}
+	}
+
+	// In production, ensure we're using mongodb+srv (Atlas) or secure connection
+	if c.IsProduction() {
+		if !strings.HasPrefix(uri, "mongodb+srv://") && !strings.Contains(uri, "ssl=true") {
+			return fmt.Errorf("production database connection must use SSL/TLS")
+		}
+	}
+
+	return nil
+}
+
+// isWeakSecret checks if a secret follows weak patterns
+func isWeakSecret(secret string) bool {
+	// Convert to lowercase for checking
+	lower := strings.ToLower(secret)
+
+	// Check for dictionary words or common patterns
+	weakPatterns := []string{
+		"password", "secret", "admin", "user", "test", "demo",
+		"123456", "qwerty", "abc", "letmein", "welcome",
+		"smor", "ting", "smorting", "api", "key",
+	}
+
+	for _, pattern := range weakPatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+
+	// Check if it's all the same character repeated
+	if len(secret) > 0 {
+		firstChar := secret[0]
+		allSame := true
+		for _, char := range secret {
+			if byte(char) != firstChar {
+				allSame = false
+				break
+			}
+		}
+		if allSame {
+			return true
+		}
+	}
+
+	// Check for simple patterns like "abcd", "1234", etc.
+	if isSequentialPattern(secret) {
+		return true
+	}
+
+	return false
+}
+
+// isSequentialPattern checks for sequential character patterns
+func isSequentialPattern(s string) bool {
+	if len(s) < 4 {
+		return false
+	}
+
+	// Check for increasing sequences
+	increasing := true
+	decreasing := true
+
+	for i := 1; i < len(s); i++ {
+		if s[i] != s[i-1]+1 {
+			increasing = false
+		}
+		if s[i] != s[i-1]-1 {
+			decreasing = false
+		}
+	}
+
+	return increasing || decreasing
 }
 
 // IsDevelopment returns true if the application is running in development mode

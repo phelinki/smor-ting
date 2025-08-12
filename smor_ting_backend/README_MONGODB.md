@@ -154,7 +154,7 @@ DB_SSL_MODE=disable
 DB_IN_MEMORY=false
 
 # JWT Configuration
-JWT_SECRET=your-secret-key-change-in-production
+JWT_SECRET=YOUR_JWT_SECRET_MIN_32_CHARS
 JWT_EXPIRATION=24h
 BCRYPT_COST=12
 
@@ -421,7 +421,7 @@ LOG_LEVEL=debug
 ENV=production
 DB_IN_MEMORY=false
 LOG_LEVEL=info
-JWT_SECRET=your-production-secret
+JWT_SECRET=YOUR_PRODUCTION_JWT_SECRET_MIN_32_CHARS
 ```
 
 ## 📈 Performance Metrics

@@ -42,13 +42,13 @@ DB_HOST=your-cluster-host.mongodb.net
 DB_PORT=27017
 DB_NAME=smor_ting
 DB_USERNAME=smorting_user
-DB_PASSWORD=your_strong_password_here
+DB_PASSWORD=YOUR_MONGODB_PASSWORD
 DB_SSL_MODE=require
 DB_IN_MEMORY=false
 MONGODB_ATLAS=true
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_SECRET=YOUR_JWT_SECRET_MIN_32_CHARS
 JWT_EXPIRATION=24h
 BCRYPT_COST=12
 

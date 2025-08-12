@@ -80,7 +80,7 @@ cd smor_ting_backend
 
 3. **Connection String Format**
    ```
-   mongodb+srv://smorting_user:your_password@cluster0.xxxxx.mongodb.net/smor_ting?retryWrites=true&w=majority
+   mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
    ```
 
 ### Step 6: Configure Your Application
@@ -98,15 +98,15 @@ cd smor_ting_backend
    DB_HOST=cluster0.xxxxx.mongodb.net
    DB_PORT=27017
    DB_NAME=smor_ting
-   DB_USERNAME=smorting_user
-   DB_PASSWORD=your_strong_password_here
+   DB_USERNAME=YOUR_MONGODB_USERNAME
+   DB_PASSWORD=YOUR_MONGODB_PASSWORD
    DB_SSL_MODE=require
    DB_IN_MEMORY=false
    MONGODB_ATLAS=true
-   MONGODB_URI=mongodb+srv://smorting_user:your_password@cluster0.xxxxx.mongodb.net/smor_ting?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
 
    # JWT Configuration
-   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   JWT_SECRET=YOUR_VERY_SECURE_JWT_SECRET_MIN_32_CHARS
    JWT_EXPIRATION=24h
    BCRYPT_COST=12
 
@@ -183,7 +183,7 @@ Expected response:
 # Production settings
 ENV=production
 LOG_LEVEL=info
-JWT_SECRET=your-production-secret-key
+JWT_SECRET=YOUR_PRODUCTION_JWT_SECRET_MIN_32_CHARS
 MONGODB_ATLAS=true
 ```
 

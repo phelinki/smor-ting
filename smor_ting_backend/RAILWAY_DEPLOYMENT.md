@@ -44,7 +44,7 @@ This guide will walk you through deploying your Smor-Ting Go backend to Railway.
    PORT=8080
    HOST=0.0.0.0
    MONGODB_URI=your_mongodb_atlas_connection_string
-   JWT_SECRET=your_jwt_secret
+   JWT_SECRET=YOUR_JWT_SECRET
    # ... other variables
    ```
 
@@ -82,11 +82,11 @@ DB_HOST=your_cluster.mongodb.net
 DB_PORT=27017
 DB_NAME=smor_ting
 DB_USERNAME=your_username
-DB_PASSWORD=your_password
+DB_PASSWORD=YOUR_MONGODB_PASSWORD
 DB_SSL_MODE=require
 DB_IN_MEMORY=false
 MONGODB_ATLAS=true
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/smor_ting?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
 
 # Authentication
 JWT_ACCESS_SECRET=your_base64_encoded_access_secret

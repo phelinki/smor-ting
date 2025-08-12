@@ -212,7 +212,7 @@ go test -cover ./...
 # Backend
 PORT=8080
 MONGODB_URI=mongodb://localhost:27017/smorting
-JWT_SECRET=your-secret-key
+JWT_SECRET=YOUR_JWT_SECRET_MIN_32_CHARS
 
 # Mobile App
 API_BASE_URL=http://localhost:8080/api/v1

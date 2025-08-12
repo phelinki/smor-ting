@@ -93,8 +93,8 @@ doctl apps create --spec app.yaml
 ```bash
 # Required for production
 ENV=production
-JWT_SECRET=your-super-secret-production-key-min-32-chars
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/db
+JWT_SECRET=YOUR_PRODUCTION_JWT_SECRET_MIN_32_CHARS
+MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE
 MONGODB_ATLAS=true
 
 # Security headers

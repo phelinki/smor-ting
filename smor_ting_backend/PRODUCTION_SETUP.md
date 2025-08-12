@@ -88,14 +88,14 @@ DB_HOST=your-cluster.mongodb.net
 DB_PORT=27017
 DB_NAME=smor_ting_prod
 DB_USERNAME=smorting_prod_user
-DB_PASSWORD=your-strong-production-password
+DB_PASSWORD=YOUR_PRODUCTION_PASSWORD
 DB_SSL_MODE=require
 DB_IN_MEMORY=false
 MONGODB_ATLAS=true
-MONGODB_URI=mongodb+srv://smorting_prod_user:password@cluster.mongodb.net/smor_ting_prod?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
 
 # JWT Configuration (CHANGE THIS!)
-JWT_SECRET=your-super-secret-production-jwt-key-min-32-chars
+JWT_SECRET=YOUR_PRODUCTION_JWT_SECRET_MIN_32_CHARS
 JWT_EXPIRATION=24h
 BCRYPT_COST=12
 

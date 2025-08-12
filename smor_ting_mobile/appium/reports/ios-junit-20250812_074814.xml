@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="0" tests="5" time="2053.366" timestamp="2025-08-12T07:48:15.416368" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="386.101"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="368.362"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="560.271"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="368.910"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_password" time="369.482"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase></testsuite></testsuites>

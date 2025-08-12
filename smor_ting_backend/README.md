@@ -59,7 +59,7 @@ DB_IN_MEMORY=true
 DB_NAME=smor_ting.db
 
 # Authentication
-JWT_SECRET=your-secret-key-change-in-production
+JWT_SECRET=YOUR_JWT_SECRET_MIN_32_CHARS
 JWT_EXPIRATION=24h
 BCRYPT_COST=12
 
@@ -87,13 +87,13 @@ DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=your_username
-DB_PASSWORD=your_password
+DB_PASSWORD=YOUR_MONGODB_PASSWORD
 DB_NAME=smor_ting
 DB_SSL_MODE=require
 DB_IN_MEMORY=false
 
 # Authentication (Use a strong secret in production!)
-JWT_SECRET=your-very-strong-secret-key-here
+JWT_SECRET=YOUR_JWT_SECRET_MIN_32_CHARS
 JWT_EXPIRATION=24h
 BCRYPT_COST=12
 
