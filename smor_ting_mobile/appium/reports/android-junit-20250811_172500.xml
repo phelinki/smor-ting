@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="0" tests="5" time="25.444" timestamp="2025-08-11T17:25:01.374260" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_forgot_password" name="test_forgot_password_flow" time="5.123"><error message="failed on setup with &quot;selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Avd 'Pixel_4_API_30' is not available. Please select your avd name from one of these: 'Medium_Phone_API_36.0'&#10;Stacktrace:&#10;UnknownError: An unknown server-side error occurred while processing the command. Original error: Avd 'Pixel_4_API_30' is not available. Please select your avd name from one of these: 'Medium_Phone_API_36.0'&#10;    at getResponseForW3CError (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)&#10;    at asyncHandler (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)&quot;">conftest.py:202: in driver
+    drv = webdriver.Remote(
+.venv/lib/python3.9/site-packages/appium/webdriver/webdriver.py:229: in __init__
+    super().__init__(
+.venv/lib/python3.9/site-packages/selenium/webdriver/remote/webdriver.py:208: in __init__
+    self.start_session(capabilities)
+.venv/lib/python3.9/site-packages/appium/webdriver/webdriver.py:321: in start_session
+    response = self.execute(RemoteCommand.NEW_SESSION, w3c_caps)
+.venv/lib/python3.9/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+.venv/lib/python3.9/site-packages/selenium/webdriver/remote/errorhandler.py:229: in check_response
+    raise exception_class(message, screen, stacktrace)
+E   selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Avd 'Pixel_4_API_30' is not available. Please select your avd name from one of these: 'Medium_Phone_API_36.0'
+E   Stacktrace:
+E   UnknownError: An unknown server-side error occurred while processing the command. Original error: Avd 'Pixel_4_API_30' is not available. Please select your avd name from one of these: 'Medium_Phone_API_36.0'
+E       at getResponseForW3CError (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+E       at asyncHandler (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="5.034"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:58: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="5.040"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:58: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="5.042"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:58: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="5.034"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:58: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

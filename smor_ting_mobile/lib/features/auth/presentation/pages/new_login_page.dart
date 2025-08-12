@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/enhanced_auth_service.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 
@@ -22,6 +24,8 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
   
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
 
   @override
   void initState() {
@@ -29,7 +33,39 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
     // Clear any existing auth errors when the page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authNotifierProvider.notifier).clearError();
+      _checkBiometricAvailability();
     });
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    try {
+      final authService = ref.read(enhancedAuthServiceProvider);
+      final isAvailable = await authService.canUseBiometrics();
+      final availableBiometrics = await authService.getAvailableBiometrics();
+      
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = isAvailable && availableBiometrics.isNotEmpty;
+        });
+        
+        // Check if any user has biometric enabled (simplified check)
+        if (_biometricAvailable) {
+          // In a real app, check if current user has biometric enabled
+          const userEmail = 'user@example.com'; // TODO: Get from session or input
+          final isEnabled = await authService.isBiometricEnabled(userEmail);
+          setState(() {
+            _biometricEnabled = isEnabled;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = false;
+          _biometricEnabled = false;
+        });
+      }
+    }
   }
 
   @override
@@ -51,6 +87,66 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
         _usernameController.text.trim(),
         _passwordController.text,
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authService = ref.read(enhancedAuthServiceProvider);
+      const userEmail = 'user@example.com'; // TODO: Get from session or input
+      
+      final result = await authService.authenticateWithBiometrics(userEmail);
+      
+      if (result.success && result.user != null) {
+        // Update auth state
+        ref.read(authNotifierProvider.notifier).setAuthenticatedUser(
+          result.user!,
+          result.accessToken!,
+        );
+        
+        // Navigate to appropriate page based on user role
+        if (mounted) {
+          switch (result.user!.role) {
+            case UserRole.customer:
+              context.go('/home');
+              break;
+            case UserRole.provider:
+              context.go('/agent-home');
+              break;
+            case UserRole.admin:
+              context.go('/admin-home');
+              break;
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message ?? 'Biometric authentication failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Biometric authentication failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -97,6 +193,15 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
           SnackBar(
             content: Text(next.message),
             backgroundColor: AppTheme.error,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: AppTheme.white,
+              onPressed: () {
+                if (!_isLoading) {
+                  _handleLogin();
+                }
+              },
+            ),
           ),
         );
       }
@@ -138,7 +243,9 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 const SizedBox(height: 32),
                 
                 // Username Field
-                CustomTextField(
+                Semantics(
+                  label: 'login_email',
+                  child: CustomTextField(
                   controller: _usernameController,
                   labelText: 'Username or Email',
                   hintText: 'Enter your username or email',
@@ -154,11 +261,14 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                   ),
                   validator: _validateUsername,
                 ),
+                ),
                 
                 const SizedBox(height: 20),
                 
                 // Password Field
-                CustomTextField(
+                Semantics(
+                  label: 'login_password',
+                  child: CustomTextField(
                   controller: _passwordController,
                   labelText: 'Password',
                   hintText: 'Enter your password',
@@ -177,26 +287,26 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                   ),
                   validator: _validatePassword,
                 ),
+                ),
                 
                 const SizedBox(height: 16),
                 
                 // Forgot Password Link
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to forgot password page
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Forgot password feature coming soon!'),
+                  child: Semantics(
+                    label: 'login_forgot_password',
+                    button: true,
+                    child: TextButton(
+                      onPressed: () {
+                        context.go('/forgot-password');
+                      },
+                      child: const Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: AppTheme.primaryRed,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    },
-                    child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: AppTheme.primaryRed,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -207,7 +317,10 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 // Sign In Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: Semantics(
+                    label: 'login_submit',
+                    button: true,
+                    child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryRed,
@@ -233,8 +346,60 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                    ),
                   ),
                 ),
+                
+                // Biometric Unlock Button
+                if (_biometricAvailable && _biometricEnabled) ...[
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'or',
+                          style: TextStyle(
+                            color: AppTheme.gray,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _handleBiometricLogin,
+                      icon: const Icon(
+                        Icons.fingerprint,
+                        color: AppTheme.primaryRed,
+                        size: 24,
+                      ),
+                      label: const Text(
+                        'Unlock with Biometrics',
+                        style: TextStyle(
+                          color: AppTheme.primaryRed,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: AppTheme.primaryRed),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 
                 const SizedBox(height: 24),
                 
@@ -255,6 +420,27 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                   ),
                 ),
                 
+                // Register Link
+                Align(
+                  alignment: Alignment.center,
+                  child: Semantics(
+                    label: 'login_register_link',
+                    button: true,
+                    child: TextButton(
+                      onPressed: () {
+                        context.go('/register');
+                      },
+                      child: const Text(
+                        "Don't have an account? Create one",
+                        style: TextStyle(
+                          color: AppTheme.primaryRed,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
                 
                 // Error Message

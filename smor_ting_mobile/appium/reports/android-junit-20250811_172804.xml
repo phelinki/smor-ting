@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="4" failures="1" skipped="0" tests="5" time="294.948" timestamp="2025-08-11T17:28:04.540949" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_forgot_password" name="test_forgot_password_flow" time="55.477"><failure message="selenium.common.exceptions.TimeoutException: Message: &#10;Stacktrace:&#10;NoSuchElementError: An element could not be located on the page using the given search parameters.&#10;    at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)&#10;    at processTicksAndRejections (node:internal/process/task_queues:105:5)&#10;    at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)&#10;    at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)">tests/auth/test_forgot_password.py:11: in test_forgot_password_flow
+    login.tap_forgot_password_link()
+tests/common/page_objects/auth_pages.py:182: in tap_forgot_password_link
+    self.tap(self.FORGOT_PASSWORD_LINK)
+tests/common/page_objects/base_page.py:80: in tap
+    element = self.wait_for_element_clickable(locator, timeout)
+tests/common/page_objects/base_page.py:60: in wait_for_element_clickable
+    return wait.until(EC.element_to_be_clickable(locator))
+.venv/lib/python3.9/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)</failure></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="117.074"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:81: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:169: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="1.818"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:58: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="118.878"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:81: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:169: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="1.472"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:58: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

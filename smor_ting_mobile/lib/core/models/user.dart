@@ -145,14 +145,14 @@ class AuthResponse {
   final String? accessToken;
   @JsonKey(name: 'refresh_token')
   final String? refreshToken;
-  @JsonKey(name: 'requires_otp')
+  @JsonKey(name: 'requires_otp', defaultValue: false)
   final bool requiresOTP;
 
   const AuthResponse({
     required this.user,
     this.accessToken,
     this.refreshToken,
-    required this.requiresOTP,
+    this.requiresOTP = false,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => _$AuthResponseFromJson(json);

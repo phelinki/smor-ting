@@ -1,0 +1,416 @@
+name: 🤖 QA Automation - Appium Tests
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+  pull_request:
+    branches: [ main, develop ]
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - auth
+        - registration
+        - login
+
+env:
+  FLUTTER_VERSION: '3.32.8'
+  JAVA_VERSION: '11'
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: Build and prepare Flutter app
+  build-app:
+    name: 🏗️ Build Flutter App
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+        
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        
+    - name: 📦 Get Flutter dependencies
+      working-directory: ./smor_ting_mobile
+      run: |
+        flutter doctor -v
+        flutter pub get
+        flutter pub run build_runner build --delete-conflicting-outputs
+        
+    - name: 🔍 Run Flutter analysis
+      working-directory: ./smor_ting_mobile
+      run: flutter analyze
+      
+    - name: 🧪 Run Flutter unit tests
+      working-directory: ./smor_ting_mobile
+      run: flutter test
+      
+    - name: 🤖 Build Android APK
+      working-directory: ./smor_ting_mobile
+      run: |
+        flutter build apk --debug --verbose
+        
+    - name: 📤 Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: smor_ting_mobile/build/app/outputs/flutter-apk/app-debug.apk
+        retention-days: 5
+
+  # Job 2: Android Appium Tests
+  appium-android-tests:
+    name: 🤖 Android QA Tests
+    runs-on: macos-latest
+    needs: build-app
+    
+    strategy:
+      matrix:
+        api-level: [30, 33]
+        target: [google_apis]
+        arch: [x86_64]
+        
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+        
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: smor_ting_mobile/appium/package.json
+        
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+        cache-dependency-path: smor_ting_mobile/appium/requirements.txt
+        
+    - name: 📥 Download APK artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: android-apk
+        path: smor_ting_mobile/build/app/outputs/flutter-apk/
+        
+    - name: 🔧 Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: 📱 AVD cache
+      uses: actions/cache@v4
+      id: avd-cache
+      with:
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-${{ matrix.api-level }}-${{ matrix.target }}-${{ matrix.arch }}
+        
+    - name: 📱 Create AVD and generate snapshot for caching
+      if: steps.avd-cache.outputs.cache-hit != 'true'
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{ matrix.api-level }}
+        target: ${{ matrix.target }}
+        arch: ${{ matrix.arch }}
+        force-avd-creation: false
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: false
+        script: echo "Generated AVD snapshot for caching."
+        
+    - name: 🚀 Install Appium
+      run: |
+        npm install -g appium@next
+        appium driver install uiautomator2
+        appium --version
+        
+    - name: 🐍 Install Python dependencies
+      working-directory: ./smor_ting_mobile/appium
+      run: |
+        pip install -r requirements.txt
+        
+    - name: 🤖 Run Appium Android Tests
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{ matrix.api-level }}
+        target: ${{ matrix.target }}
+        arch: ${{ matrix.arch }}
+        force-avd-creation: false
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: true
+        script: |
+          cd smor_ting_mobile/appium
+          
+          # Configure test environment
+          export PLATFORM=android
+          export API_LEVEL=${{ matrix.api-level }}
+          export TEST_SUITE=${{ github.event.inputs.test_suite || 'all' }}
+          
+          # Start Appium server in background
+          appium server --port 4723 --log appium.log &
+          sleep 10
+          
+          # Run tests based on suite selection
+          if [ "$TEST_SUITE" = "auth" ]; then
+            pytest tests/ -k "auth" -v --html=reports/android-auth-report.html --self-contained-html
+          elif [ "$TEST_SUITE" = "registration" ]; then
+            pytest tests/ -k "registration" -v --html=reports/android-registration-report.html --self-contained-html
+          elif [ "$TEST_SUITE" = "login" ]; then
+            pytest tests/ -k "login" -v --html=reports/android-login-report.html --self-contained-html
+          else
+            pytest tests/ -v --html=reports/android-report.html --self-contained-html --junitxml=reports/android-junit.xml
+          fi
+          
+    - name: 📊 Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: android-test-reports-api${{ matrix.api-level }}
+        path: |
+          smor_ting_mobile/appium/reports/
+          smor_ting_mobile/appium/appium.log
+        retention-days: 30
+        
+    - name: 📈 Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: 🤖 Android Tests (API ${{ matrix.api-level }})
+        path: smor_ting_mobile/appium/reports/android-junit.xml
+        reporter: java-junit
+        fail-on-error: true
+
+  # Job 3: iOS Appium Tests (macOS only)
+  appium-ios-tests:
+    name: 🍎 iOS QA Tests
+    runs-on: macos-latest
+    needs: build-app
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    strategy:
+      matrix:
+        ios-version: ['15.5', '16.4']
+        device: ['iPhone 13', 'iPhone 14']
+        
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: 🏗️ Build iOS app
+      working-directory: ./smor_ting_mobile
+      run: |
+        flutter pub get
+        flutter build ios --simulator --debug
+        
+    - name: 🚀 Install Appium
+      run: |
+        npm install -g appium@next
+        appium driver install xcuitest
+        
+    - name: 🐍 Install Python dependencies
+      working-directory: ./smor_ting_mobile/appium
+      run: pip install -r requirements.txt
+      
+    - name: 📱 List available simulators
+      run: xcrun simctl list devices
+      
+    - name: 📱 Boot iOS Simulator
+      run: |
+        UDID=$(xcrun simctl list devices | grep "${{ matrix.device }}" | grep "${{ matrix.ios-version }}" | head -n1 | grep -o "([A-F0-9-]*)" | tr -d "()")
+        if [ ! -z "$UDID" ]; then
+          xcrun simctl boot "$UDID"
+          sleep 30
+        else
+          echo "Simulator not found, using default"
+          xcrun simctl boot "iPhone 13"
+          sleep 30
+        fi
+        
+    - name: 🍎 Run Appium iOS Tests
+      working-directory: ./smor_ting_mobile/appium
+      run: |
+        export PLATFORM=ios
+        export TEST_SUITE=${{ github.event.inputs.test_suite || 'all' }}
+        
+        # Start Appium server
+        appium server --port 4723 --log appium.log &
+        sleep 10
+        
+        # Run tests
+        if [ "$TEST_SUITE" = "auth" ]; then
+          pytest tests/ -k "auth" -v --html=reports/ios-auth-report.html --self-contained-html
+        elif [ "$TEST_SUITE" = "registration" ]; then
+          pytest tests/ -k "registration" -v --html=reports/ios-registration-report.html --self-contained-html
+        elif [ "$TEST_SUITE" = "login" ]; then
+          pytest tests/ -k "login" -v --html=reports/ios-login-report.html --self-contained-html
+        else
+          pytest tests/ -v --html=reports/ios-report.html --self-contained-html --junitxml=reports/ios-junit.xml
+        fi
+        
+    - name: 📊 Upload iOS test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ios-test-reports-${{ matrix.device }}-${{ matrix.ios-version }}
+        path: |
+          smor_ting_mobile/appium/reports/
+          smor_ting_mobile/appium/appium.log
+        retention-days: 30
+
+  # Job 4: Security and Performance Analysis
+  security-performance:
+    name: 🔒 Security & Performance
+    runs-on: ubuntu-latest
+    needs: build-app
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Run security analysis
+      run: |
+        echo "🔒 Security analysis would run here"
+        echo "- SAST scanning"
+        echo "- Dependency vulnerability check"
+        echo "- API security testing"
+        
+    - name: ⚡ Performance testing
+      run: |
+        echo "⚡ Performance testing would run here"
+        echo "- App startup time"
+        echo "- Memory usage"
+        echo "- API response times"
+
+  # Job 5: Test Result Summary and Deployment Gate
+  test-summary:
+    name: 📋 Test Summary & Deployment Gate
+    runs-on: ubuntu-latest
+    needs: [build-app, appium-android-tests, appium-ios-tests, security-performance]
+    if: always()
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📊 Download all test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: test-results/
+        
+    - name: 📋 Generate test summary
+      run: |
+        echo "# 🧪 QA Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Flutter Build**: ${{ needs.build-app.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Android Tests**: ${{ needs.appium-android-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **iOS Tests**: ${{ needs.appium-ios-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Security & Performance**: ${{ needs.security-performance.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if any critical tests failed
+        if [[ "${{ needs.appium-android-tests.result }}" == "failure" || "${{ needs.appium-ios-tests.result }}" == "failure" ]]; then
+          echo "## ❌ DEPLOYMENT BLOCKED" >> $GITHUB_STEP_SUMMARY
+          echo "Critical QA tests failed. Deployment is blocked until tests pass." >> $GITHUB_STEP_SUMMARY
+          exit 1
+        else
+          echo "## ✅ DEPLOYMENT APPROVED" >> $GITHUB_STEP_SUMMARY
+          echo "All QA tests passed. Ready for deployment." >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: 🚨 Create issue on test failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 QA Tests Failed - Deployment Blocked',
+            body: `
+            ## QA Test Failure Report
+            
+            **Branch**: \`${{ github.ref_name }}\`
+            **Commit**: \`${{ github.sha }}\`
+            **Workflow**: ${{ github.workflow }}
+            
+            ### Failed Jobs:
+            - Flutter Build: ${{ needs.build-app.result }}
+            - Android Tests: ${{ needs.appium-android-tests.result }}
+            - iOS Tests: ${{ needs.appium-ios-tests.result }}
+            - Security & Performance: ${{ needs.security-performance.result }}
+            
+            ### Action Required:
+            1. Review test reports in the workflow artifacts
+            2. Fix failing tests
+            3. Push fixes to trigger new QA run
+            
+            **Deployment is blocked until all tests pass.**
+            `,
+            labels: ['bug', 'qa-failure', 'deployment-blocked']
+          })
+
+  # Job 6: Deploy (only if all tests pass)
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    needs: [test-summary]
+    if: github.ref == 'refs/heads/main' && success()
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🚀 Deploy to production
+      run: |
+        echo "🚀 Deploying to production..."
+        echo "✅ All QA tests passed - deployment approved"
+        
+        # Add your actual deployment steps here:
+        # - Deploy to app stores
+        # - Update backend services
+        # - Notify stakeholders
+        
+    - name: 📢 Notify success
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "All QA automation tests passed before deployment."

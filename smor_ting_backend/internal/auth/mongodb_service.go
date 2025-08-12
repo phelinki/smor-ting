@@ -225,6 +225,68 @@ func (s *MongoDBService) VerifyOTP(ctx context.Context, email, otpCode string) e
 	return nil
 }
 
+// GetLatestOTPByEmail returns the most recent unused, unexpired OTP for an email (test utility)
+func (s *MongoDBService) GetLatestOTPByEmail(ctx context.Context, email string) (*models.OTPRecord, error) {
+	return s.repository.GetLatestOTPByEmail(ctx, email)
+}
+
+// GetUserByEmail returns a user by email
+func (s *MongoDBService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.repository.GetUserByEmail(ctx, email)
+}
+
+// RequestPasswordReset creates a password reset OTP and (optionally) triggers email by caller
+func (s *MongoDBService) RequestPasswordReset(ctx context.Context, email string) error {
+	// Ensure user exists (avoid leaking existence via error message details)
+	if _, err := s.repository.GetUserByEmail(ctx, email); err != nil {
+		// Return OK to avoid user enumeration; log internally
+		s.logger.Warn("Password reset requested for non-existent email", zap.String("email", email))
+		return nil
+	}
+	// Generate OTP and persist
+	otp := generateOTP()
+	otpRecord := &models.OTPRecord{
+		Email:     email,
+		OTP:       otp,
+		Purpose:   "password_reset",
+		ExpiresAt: time.Now().Add(10 * time.Minute),
+	}
+	if err := s.repository.CreateOTP(ctx, otpRecord); err != nil {
+		return fmt.Errorf("failed to create reset otp: %w", err)
+	}
+	s.logger.Info("Password reset OTP created", zap.String("email", email))
+	return nil
+}
+
+// ResetPassword verifies OTP and updates the user's password
+func (s *MongoDBService) ResetPassword(ctx context.Context, email, otpCode, newPassword string) error {
+	// Validate OTP
+	if _, err := s.repository.GetOTP(ctx, email, otpCode); err != nil {
+		return fmt.Errorf("invalid or expired OTP")
+	}
+	// Hash password
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), s.config.BCryptCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+	// Update user
+	user, err := s.repository.GetUserByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+	user.Password = string(hash)
+	user.UpdatedAt = time.Now()
+	if err := s.repository.UpdateUser(ctx, user); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+	// Mark OTP as used
+	if otp, err := s.repository.GetOTP(ctx, email, otpCode); err == nil {
+		_ = s.repository.MarkOTPAsUsed(ctx, otp.ID)
+	}
+	s.logger.Info("Password reset successful", zap.String("email", email))
+	return nil
+}
+
 // hashPassword hashes a password using bcrypt
 func (s *MongoDBService) hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), s.config.BCryptCost)

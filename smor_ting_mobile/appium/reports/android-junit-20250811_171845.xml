@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="0" tests="5" time="0.297" timestamp="2025-08-11T17:18:45.986929" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_forgot_password" name="test_forgot_password_flow" time="0.054"><error message="failed on setup with &quot;file /Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_forgot_password.py, line 6&#10;  @pytest.mark.e2e&#10;  def test_forgot_password_flow(driver):&#10;E       fixture 'driver' not found&#10;&gt;       available fixtures: _session_faker, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, cov, doctest_namespace, extra, extras, faker, include_metadata_in_junit_xml, json_metadata, metadata, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, screenshot_on_failure, test_config, test_data, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, worker_id&#10;&gt;       use 'pytest --fixtures [testpath]' for help on them.&#10;&#10;/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_forgot_password.py:6&quot;">file /Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_forgot_password.py, line 6
+  @pytest.mark.e2e
+  def test_forgot_password_flow(driver):
+E       fixture 'driver' not found
+&gt;       available fixtures: _session_faker, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, cov, doctest_namespace, extra, extras, faker, include_metadata_in_junit_xml, json_metadata, metadata, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, screenshot_on_failure, test_config, test_data, testrun_uid, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, worker_id
+&gt;       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_forgot_password.py:6</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="0.001"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:57: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="0.001"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:57: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="0.001"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:57: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="0.001"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:57: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

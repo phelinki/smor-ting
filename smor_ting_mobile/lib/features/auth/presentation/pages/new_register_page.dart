@@ -8,6 +8,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/models/user.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/email_exists_error_widget.dart';
 
 class NewRegisterPage extends ConsumerStatefulWidget {
   const NewRegisterPage({super.key});
@@ -49,6 +50,18 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    _firstNameController.clear();
+    _lastNameController.clear();
+    _addressController.clear();
+    _phoneController.clear();
+    _emailController.clear();
+    _passwordController.clear();
+    _confirmPasswordController.clear();
+    ref.read(authNotifierProvider.notifier).resetToInitial();
   }
 
   Future<void> _handleRegister(UserRole role) async {
@@ -122,7 +135,10 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
 
     // Listen to auth state changes for navigation
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      print('🔴 RegisterPage: Auth state changed from ${previous.runtimeType} to ${next.runtimeType}');
+      
       if (next is Authenticated) {
+        print('🔴 RegisterPage: User authenticated, navigating based on role: ${next.user.role}');
         final role = next.user.role;
         if (role == UserRole.provider || role == UserRole.admin) {
           context.go('/agent-dashboard');
@@ -130,8 +146,13 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
           context.go('/home');
         }
       } else if (next is RequiresOTP) {
+        print('🔴 RegisterPage: OTP required, navigating to verify page');
         context.go('/verify-otp?email=${next.email}&fullName=${next.user.fullName}');
+      } else if (next is EmailAlreadyExists) {
+        print('🔴 RegisterPage: Email already exists, showing custom error widget for email: ${next.email}');
+        // Do nothing - the UI will show the custom error widget
       } else if (next is Error) {
+        print('🔴 RegisterPage: Error state, showing snackbar: ${next.message}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.message),
@@ -177,7 +198,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                 const SizedBox(height: 32),
                 
                 // First Name Field
-                CustomTextField(
+                Semantics(label: 'register_first_name', child: CustomTextField(
                   controller: _firstNameController,
                   labelText: 'First Name',
                   hintText: 'Enter your first name',
@@ -189,12 +210,12 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     }
                     return null;
                   },
-                ),
+                )),
                 
                 const SizedBox(height: 20),
                 
                 // Last Name Field
-                CustomTextField(
+                Semantics(label: 'register_last_name', child: CustomTextField(
                   controller: _lastNameController,
                   labelText: 'Last Name',
                   hintText: 'Enter your last name',
@@ -206,12 +227,12 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     }
                     return null;
                   },
-                ),
+                )),
                 
                 const SizedBox(height: 20),
                 
                 // Address Field
-                CustomTextField(
+                Semantics(label: 'register_address', child: CustomTextField(
                   controller: _addressController,
                   labelText: 'Address',
                   hintText: 'Enter your address',
@@ -223,12 +244,12 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     }
                     return null;
                   },
-                ),
+                )),
                 
                 const SizedBox(height: 20),
                 
                 // Phone Field
-                CustomTextField(
+                Semantics(label: 'register_phone', child: CustomTextField(
                   controller: _phoneController,
                   labelText: 'Phone Number',
                   hintText: 'Enter your phone number',
@@ -238,7 +259,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     FilteringTextInputFormatter.digitsOnly,
                   ],
                   validator: _validatePhone,
-                ),
+                )),
                 
                 // Phone format helper text
                 Padding(
@@ -255,7 +276,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                 const SizedBox(height: 20),
                 
                 // Email Field
-                CustomTextField(
+                Semantics(label: 'register_email', child: CustomTextField(
                   controller: _emailController,
                   labelText: 'Email',
                   hintText: 'Enter your email',
@@ -270,12 +291,12 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     }
                     return null;
                   },
-                ),
+                )),
                 
                 const SizedBox(height: 20),
                 
                 // Password Field
-                CustomTextField(
+                Semantics(label: 'register_password', child: CustomTextField(
                   controller: _passwordController,
                   labelText: 'Password',
                   hintText: 'Create a password',
@@ -293,7 +314,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     },
                   ),
                   validator: _validatePassword,
-                ),
+                )),
                 
                 // Password requirements helper text
                 Padding(
@@ -310,7 +331,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                 const SizedBox(height: 20),
                 
                 // Confirm Password Field
-                CustomTextField(
+                Semantics(label: 'register_confirm_password', child: CustomTextField(
                   controller: _confirmPasswordController,
                   labelText: 'Confirm Password',
                   hintText: 'Confirm your password',
@@ -328,39 +349,43 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                     },
                   ),
                   validator: _validateConfirmPassword,
-                ),
+                )),
                 
                 const SizedBox(height: 32),
                 
                 // Register as Customer Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : () => _handleRegister(UserRole.customer),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryRed,
-                      foregroundColor: AppTheme.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Semantics(
+                    label: 'register_submit',
+                    button: true,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : () => _handleRegister(UserRole.customer),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryRed,
+                        foregroundColor: AppTheme.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
+                              ),
+                            )
+                          : const Text(
+                              'Register as Customer',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
-                            ),
-                          )
-                        : const Text(
-                            'Register as Customer',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                   ),
                 ),
                 
@@ -410,8 +435,13 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                 
                 const SizedBox(height: 24),
                 
-                // Error Message
-                if (authState is Error)
+                // Error Messages
+                if (authState is EmailAlreadyExists)
+                  EmailExistsErrorWidget(
+                    email: authState.email,
+                    onCreateAnotherUser: _resetForm,
+                  )
+                else if (authState is Error)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -420,7 +450,7 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
                       border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
                     ),
                     child: Text(
-                      (authState as Error).message,
+                      authState.message,
                       style: const TextStyle(
                         color: AppTheme.error,
                         fontSize: 14,

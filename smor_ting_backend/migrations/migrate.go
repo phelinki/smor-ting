@@ -233,7 +233,7 @@ func (m *Migrator) addWalletSupport(ctx context.Context) error {
 			"$set": bson.M{
 				"wallet": bson.M{
 					"balance":      0,
-					"currency":     "KES",
+					"currency":     "LRD",
 					"transactions": []interface{}{},
 					"last_updated": time.Now(),
 				},

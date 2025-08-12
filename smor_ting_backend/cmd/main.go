@@ -10,18 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/extension"
-	"github.com/99designs/gqlgen/graphql/handler/lru"
-	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	"github.com/smorting/backend/configs"
-	"github.com/smorting/backend/graph"
 	"github.com/smorting/backend/internal/auth"
 	"github.com/smorting/backend/internal/database"
 	"github.com/smorting/backend/internal/handlers"
@@ -31,7 +25,6 @@ import (
 	pkgDatabase "github.com/smorting/backend/pkg/database"
 	"github.com/smorting/backend/pkg/logger"
 	"github.com/smorting/backend/pkg/middleware"
-	"github.com/vektah/gqlparser/v2/ast"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 )
@@ -47,11 +40,12 @@ type App struct {
 	authSvc         *auth.MongoDBService
 	authHdl         *auth.MongoDBHandler
 	// New security services
-	jwtService        *services.JWTRefreshService
-	encryptionService *services.EncryptionService
-	pciService        *services.PCIDSSService
-	authHandler       *handlers.AuthHandler
-	server            *fiber.App
+	jwtService          *services.JWTRefreshService
+	encryptionService   *services.EncryptionService
+	pciService          *services.PCIDSSService
+	authHandler         *handlers.AuthHandler
+	enhancedAuthHandler *handlers.EnhancedAuthHandler
+	server              *fiber.App
 }
 
 // NewApp creates a new application instance
@@ -294,10 +288,22 @@ func (a *App) initializeSecurityServices() error {
 	authHandler := handlers.NewAuthHandler(jwtService, encryptionService, a.logger, a.authSvc)
 	a.authHandler = authHandler
 
+	// Initialize enhanced auth handler for biometric and advanced auth features
+	// For now, we'll use stub implementations for the missing interfaces
+	enhancedAuthHandler := handlers.NewEnhancedAuthHandler(
+		nil,       // Enhanced auth service - will be implemented later
+		a.authSvc, // User service (reusing existing auth service)
+		a.authSvc, // OTP service (reusing existing auth service)
+		nil,       // Captcha service - stub for now
+		a.logger,
+	)
+	a.enhancedAuthHandler = enhancedAuthHandler
+
 	a.logger.Info("Security services initialized successfully",
 		zap.String("jwt_service", "enabled"),
 		zap.String("encryption_service", "enabled"),
 		zap.String("pci_service", "enabled"),
+		zap.String("enhanced_auth_handler", "enabled"),
 	)
 	return nil
 }
@@ -384,24 +390,7 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	// Health check endpoint
 	app.Get("/health", a.healthCheck)
 
-	// API documentation
-	app.Get("/docs", a.apiDocs)
-	app.Get("/swagger", a.swaggerDocs)
-
-	// GraphQL setup (HTTP transport) and Playground
-	gqlSrv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
-	// Enable introspection and basic query cache
-	gqlSrv.Use(extension.Introspection{})
-	gqlSrv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
-
-	// Apply rate limiter specifically to GraphQL endpoint
-	app.Use("/graphql", apiLimiter)
-	app.All("/graphql", adaptor.HTTPHandler(gqlSrv))
-	app.Get("/playground", adaptor.HTTPHandler(playground.Handler("GraphQL playground", "/graphql")))
-
-	// OpenAPI JSON and Redoc UI
-	app.Get("/openapi.json", a.openAPISpec)
-	app.Get("/redoc", a.redocPage)
+	// API documentation endpoints removed with GraphQL
 
 	// Basic WebSocket echo endpoint for real-time connections
 	app.Use("/ws", func(c *fiber.Ctx) error {
@@ -453,6 +442,16 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	auth.Post("/refresh", a.authHandler.RefreshToken)   // New refresh endpoint
 	auth.Post("/revoke", a.authHandler.RevokeToken)     // New revoke endpoint
 	auth.Get("/token-info", a.authHandler.GetTokenInfo) // New token info endpoint
+	// OTP and password reset endpoints
+	auth.Post("/verify-otp", a.authHandler.VerifyOTP)
+	auth.Post("/resend-otp", a.authHandler.ResendOTP)
+	auth.Post("/request-password-reset", a.authHandler.RequestPasswordReset)
+	auth.Post("/reset-password", a.authHandler.ResetPassword)
+	// Biometric authentication endpoint
+	auth.Post("/biometric-login", a.enhancedAuthHandler.BiometricLogin)
+
+	// Test-only endpoint to fetch latest OTP for an email (disabled in production unless explicitly enabled)
+	auth.Get("/test/get-latest-otp", a.authHandler.TestGetLatestOTP)
 
 	// Protected routes (authentication required)
 	// Apply authentication middleware to each route group individually
@@ -543,112 +542,7 @@ func (a *App) environmentLabel() string {
 }
 
 // apiDocs serves API documentation
-func (a *App) apiDocs(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"message": "API Documentation",
-		"version": "1.0.0",
-		"endpoints": fiber.Map{
-			"health": "/health",
-			"graphql": fiber.Map{
-				"query":      "POST /graphql",
-				"playground": "GET /playground",
-			},
-			"websocket": fiber.Map{
-				"echo": "GET /ws",
-			},
-			"auth": fiber.Map{
-				"register":   "POST /api/v1/auth/register",
-				"login":      "POST /api/v1/auth/login",
-				"validate":   "POST /api/v1/auth/validate",
-				"refresh":    "POST /api/v1/auth/refresh",
-				"revoke":     "POST /api/v1/auth/revoke",
-				"token-info": "GET /api/v1/auth/token-info",
-				"verify-otp": "POST /api/v1/auth/verify-otp",
-				"resend-otp": "POST /api/v1/auth/resend-otp",
-			},
-			"users": fiber.Map{
-				"profile": "GET /api/v1/users/profile",
-			},
-			"services": fiber.Map{
-				"list":   "GET /api/v1/services",
-				"create": "POST /api/v1/services",
-				"get":    "GET /api/v1/services/:id",
-				"update": "PUT /api/v1/services/:id",
-				"delete": "DELETE /api/v1/services/:id",
-			},
-			"payments": fiber.Map{
-				"tokenize": "POST /api/v1/payments/tokenize",
-				"process":  "POST /api/v1/payments/process",
-				"validate": "GET /api/v1/payments/validate",
-				"delete":   "DELETE /api/v1/payments/token",
-			},
-			"sync": fiber.Map{
-				"data":     "POST /api/v1/sync/data",
-				"unsynced": "GET /api/v1/sync/unsynced",
-			},
-		},
-		"security": fiber.Map{
-			"aes_256_encryption": "enabled",
-			"jwt_refresh":        "enabled",
-			"pci_dss_compliance": "enabled",
-		},
-	})
-}
-
-// swaggerDocs serves Swagger documentation
-func (a *App) swaggerDocs(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"message": "Swagger Documentation",
-		"swagger": "2.0",
-		"info": fiber.Map{
-			"title":       "Smor-Ting Backend API",
-			"version":     "1.0.0",
-			"description": "A robust, production-ready backend API for the Smor-Ting platform with offline-first capabilities and enterprise-grade security",
-		},
-		"host":     fmt.Sprintf("%s:%s", a.config.Server.Host, a.config.Server.Port),
-		"basePath": "/api/v1",
-		"schemes":  []string{"http", "https"},
-	})
-}
-
-// openAPISpec returns a minimal OpenAPI specification JSON
-func (a *App) openAPISpec(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"openapi": "3.0.0",
-		"info": fiber.Map{
-			"title":   "Smor-Ting Backend API",
-			"version": "1.0.0",
-		},
-		"paths": fiber.Map{
-			"/health": fiber.Map{
-				"get": fiber.Map{
-					"summary": "Health check",
-					"responses": fiber.Map{
-						"200": fiber.Map{"description": "OK"},
-					},
-				},
-			},
-		},
-	})
-}
-
-// redocPage serves a simple Redoc HTML page that loads the OpenAPI spec
-func (a *App) redocPage(c *fiber.Ctx) error {
-	html := `<!DOCTYPE html>
-<html>
-  <head>
-    <title>Smor-Ting API Docs</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-  </head>
-  <body>
-    <redoc spec-url="/openapi.json"></redoc>
-  </body>
-</html>`
-	c.Set("Content-Type", "text/html; charset=utf-8")
-	return c.SendString(html)
-}
+// API docs and Swagger/Redoc removed with GraphQL cleanup
 
 // Payment handlers
 func (a *App) tokenizePaymentMethod(c *fiber.Ctx) error {

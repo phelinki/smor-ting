@@ -30,6 +30,12 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
   void initState() {
     super.initState();
     _startTimer();
+    // Autofocus first OTP field after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_focusNodes.isNotEmpty) {
+        _focusNodes.first.requestFocus();
+      }
+    });
   }
 
   @override
@@ -247,6 +253,7 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
                           filled: true,
                         ),
                         onChanged: (value) => _onDigitChanged(value, index),
+                        autofocus: index == 0,
                       ),
                     ),
                   );
@@ -257,20 +264,27 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
               
               // Timer and Resend
               if (!_canResend)
-                Text(
-                  'Code expires in $_formattedTime',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                Semantics(
+                  label: 'otp_countdown_label',
+                  child: Text(
+                    'Code expires in $_formattedTime',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
                   ),
                 )
               else
-                TextButton(
-                  onPressed: _resendOTP,
-                  child: Text(
-                    'Resend Code',
-                    style: TextStyle(
-                      color: const Color(0xFFD21034),
-                      fontWeight: FontWeight.w600,
+                Semantics(
+                  label: 'otp_resend_button',
+                  button: true,
+                  child: TextButton(
+                    onPressed: _resendOTP,
+                    child: Text(
+                      'Resend Code',
+                      style: TextStyle(
+                        color: const Color(0xFFD21034),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -281,32 +295,36 @@ class _OTPVerificationPageState extends ConsumerState<OTPVerificationPage> {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton(
-                  onPressed: authState is Loading ? null : _verifyOTP,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD21034),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                child: Semantics(
+                  label: 'otp_verify_button',
+                  button: true,
+                  child: ElevatedButton(
+                    onPressed: authState is Loading ? null : _verifyOTP,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD21034),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
+                    child: authState is Loading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Verify Code',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
-                  child: authState is Loading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Verify Code',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 ),
               ),
               

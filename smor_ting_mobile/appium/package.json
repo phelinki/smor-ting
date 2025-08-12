@@ -1,0 +1,50 @@
+{
+  "name": "smor-ting-qa-automation",
+  "version": "1.0.0",
+  "description": "Appium QA automation for Smor-Ting mobile application",
+  "main": "index.js",
+  "scripts": {
+    "test": "pytest tests/ -v",
+    "test:android": "PLATFORM=android pytest tests/ -v",
+    "test:ios": "PLATFORM=ios pytest tests/ -v",
+    "test:auth": "pytest tests/ -k auth -v",
+    "test:registration": "pytest tests/ -k registration -v",
+    "test:login": "pytest tests/ -k login -v",
+    "appium:start": "appium server --port 4723",
+    "appium:install": "npm install -g appium@next && appium driver install uiautomator2 && appium driver install xcuitest && appium driver install --source=npm appium-flutter-driver",
+    "setup": "npm run appium:install && pip install -r requirements.txt",
+    "doctor": "appium driver doctor uiautomator2",
+    "clean": "rm -rf reports/* node_modules",
+    "ci:android": "./scripts/run_android_tests.sh",
+    "ci:ios": "./scripts/run_ios_tests.sh"
+  },
+  "keywords": [
+    "appium",
+    "qa",
+    "automation",
+    "mobile",
+    "testing",
+    "flutter",
+    "ci-cd"
+  ],
+  "author": "Smor-Ting Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "allure-commandline": "^2.24.1",
+    "appium": "^2.0.0",
+    "appium-flutter-driver": "^2.18.1",
+    "appium-uiautomator2-driver": "^4.2.8"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/smor-ting.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/smor-ting/issues"
+  },
+  "homepage": "https://github.com/your-org/smor-ting#readme"
+}

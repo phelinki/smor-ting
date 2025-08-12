@@ -33,6 +33,7 @@ type TestUser struct {
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+	RequiresOTP  bool   `json:"requires_otp"`
 	User         struct {
 		ID        string `json:"id"`
 		Email     string `json:"email"`
@@ -155,6 +156,7 @@ func testAuthenticationFlow(t *testing.T) {
 				assert.NotEmpty(t, authResp.AccessToken)
 				assert.NotEmpty(t, authResp.User.Email)
 				assert.Equal(t, testUser.Email, authResp.User.Email)
+				assert.False(t, authResp.RequiresOTP, "New user registration should not require OTP")
 			}
 		} else {
 			t.Logf("Registration failed with status %d: %s", resp.StatusCode, string(body))
@@ -177,6 +179,7 @@ func testAuthenticationFlow(t *testing.T) {
 			if err == nil {
 				assert.NotEmpty(t, authResp.AccessToken)
 				assert.Equal(t, testUser.Email, authResp.User.Email)
+				assert.False(t, authResp.RequiresOTP, "Regular login should not require OTP")
 			}
 		} else {
 			t.Logf("Login failed with status %d: %s", resp.StatusCode, string(body))
@@ -246,7 +249,7 @@ func testPaymentSystem(t *testing.T) {
 		paymentReq := map[string]interface{}{
 			"token_id": "dummy_token",
 			"amount":   100.00,
-			"currency": "USD",
+			"currency": "LRD",
 		}
 
 		resp, body := makeRequest(t, "POST", apiV1+"/payments/process", paymentReq)

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/exceptions/auth_exceptions.dart';
 
 part 'auth_provider.g.dart';
 
@@ -59,7 +60,12 @@ class AuthNotifier extends _$AuthNotifier {
         apiService.setAuthToken(response.accessToken!);
         state = AuthState.authenticated(response.user, response.accessToken!);
       }
+    } on EmailAlreadyExistsException catch (e) {
+      print('🔴 AuthProvider: Caught EmailAlreadyExistsException with email: ${e.email}');
+      state = AuthState.emailAlreadyExists(e.email);
     } catch (e) {
+      print('🔴 AuthProvider: Caught general exception: $e');
+      print('🔴 AuthProvider: Exception type: ${e.runtimeType}');
       state = AuthState.error(e.toString());
     }
   }
@@ -95,8 +101,33 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   void clearError() {
-    if (state is Error) {
+    if (state is Error || state is EmailAlreadyExists) {
       state = const AuthState.initial();
+    }
+  }
+
+  void resetToInitial() {
+    state = const AuthState.initial();
+  }
+
+  // Forgot password UX
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.requestPasswordReset(email);
+      state = PasswordResetEmailSent(email);
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
+  }
+
+  Future<void> resetPassword(String email, String otp, String newPassword) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.resetPassword(email, otp, newPassword);
+      state = const PasswordResetSuccess();
+    } catch (e) {
+      state = AuthState.error(e.toString());
     }
   }
 }
@@ -110,6 +141,9 @@ sealed class AuthState {
   const factory AuthState.authenticated(User user, String accessToken) = Authenticated;
   const factory AuthState.requiresOTP({required String email, required User user}) = RequiresOTP;
   const factory AuthState.error(String message) = Error;
+  const factory AuthState.emailAlreadyExists(String email) = EmailAlreadyExists;
+  const factory AuthState.passwordResetEmailSent(String email) = PasswordResetEmailSent;
+  const factory AuthState.passwordResetSuccess() = PasswordResetSuccess;
 }
 
 class Initial extends AuthState {
@@ -135,6 +169,20 @@ class RequiresOTP extends AuthState {
 class Error extends AuthState {
   final String message;
   const Error(this.message);
+}
+
+class EmailAlreadyExists extends AuthState {
+  final String email;
+  const EmailAlreadyExists(this.email);
+}
+
+class PasswordResetEmailSent extends AuthState {
+  final String email;
+  const PasswordResetEmailSent(this.email);
+}
+
+class PasswordResetSuccess extends AuthState {
+  const PasswordResetSuccess();
 }
 
 

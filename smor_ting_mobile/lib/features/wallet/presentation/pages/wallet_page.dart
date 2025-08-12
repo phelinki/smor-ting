@@ -146,7 +146,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '+\$25.00 this week',
+                              '+L\$25.00 this week',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppTheme.white,
                                 fontWeight: FontWeight.w600,
@@ -488,7 +488,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
             ),
           ),
           Text(
-            '${isCredit ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
+            '${isCredit ? '+' : '-'}L\$${transaction.amount.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: isCredit ? AppTheme.successGreen : AppTheme.primaryRed,
               fontWeight: FontWeight.bold,
@@ -612,7 +612,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
             decoration: InputDecoration(
               labelText: 'Custom Amount',
               hintText: 'Enter amount',
-              prefixText: '\$',
+              prefixText: 'L\$',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -651,7 +651,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          '\$$amount',
+          'L\$$amount',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: AppTheme.secondaryBlue,

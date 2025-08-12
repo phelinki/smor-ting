@@ -97,5 +97,5 @@ type AuthResponse struct {
 	User         User   `json:"user"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	RequiresOTP  bool   `json:"requires_otp,omitempty"`
+	RequiresOTP  bool   `json:"requires_otp"`
 }

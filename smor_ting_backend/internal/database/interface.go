@@ -20,6 +20,8 @@ type Repository interface {
 	CreateOTP(ctx context.Context, otp *models.OTPRecord) error
 	GetOTP(ctx context.Context, email, otpCode string) (*models.OTPRecord, error)
 	MarkOTPAsUsed(ctx context.Context, id primitive.ObjectID) error
+	// Test-only helper: latest OTP by email (unconsumed, unexpired)
+	GetLatestOTPByEmail(ctx context.Context, email string) (*models.OTPRecord, error)
 
 	// Service operations
 	CreateService(ctx context.Context, service *models.Service) error

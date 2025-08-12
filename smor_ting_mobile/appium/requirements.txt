@@ -1,0 +1,49 @@
+# Appium QA Automation Dependencies
+
+# Core Appium (with Flutter Driver support)
+Appium-Python-Client==3.1.1
+selenium==4.21.0
+
+# Flutter Driver for Appium
+appium-flutter-finder==0.2.0
+
+# Testing frameworks (bump pytest)
+pytest==8.2.1
+pytest-html==4.1.1
+pytest-xdist==3.3.1
+pytest-rerunfailures==12.0
+pytest-timeout==2.2.0
+
+# Allure reporting
+allure-pytest==2.13.5
+
+# Data handling
+pytest-json-report==1.5.0
+pytest-metadata==3.0.0
+
+# Utilities
+requests==2.32.3
+pillow==10.1.0
+python-dateutil==2.8.2
+
+# Development tools
+pytest-cov==4.1.0
+black==23.11.0
+flake8==6.1.0
+
+# Mobile-specific utilities
+opencv-python==4.8.1.78
+numpy==1.24.4
+
+# Configuration
+pyyaml==6.0.1
+python-dotenv==1.0.0
+
+# Parallel execution
+pytest-parallel==0.1.1
+
+# Test data generation
+faker==20.1.0
+
+# Image comparison
+imagehash==4.3.1

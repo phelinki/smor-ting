@@ -1,13 +1,20 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
+import '../models/enhanced_auth_models.dart';
 import '../constants/api_config.dart';
 import '../models/kyc.dart';
+import '../exceptions/auth_exceptions.dart';
+import 'device_fingerprint_service.dart';
 
 class ApiService {
   late final Dio _dio;
-  
-  ApiService({String? baseUrl}) {
+  final bool _loggingEnabled;
+
+  bool get loggingEnabled => _loggingEnabled;
+
+  ApiService({String? baseUrl, bool? enableLogging}) : _loggingEnabled = enableLogging ?? !kReleaseMode {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl ?? ApiConfig.baseUrl,
       connectTimeout: Duration(seconds: ApiConfig.connectTimeoutSeconds),
@@ -19,11 +26,13 @@ class ApiService {
     ));
 
     // Add interceptors for logging and error handling
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => print(obj),
-    ));
+    if (_loggingEnabled) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => print(obj),
+      ));
+    }
 
     _dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) {
@@ -48,6 +57,66 @@ class ApiService {
     try {
       final response = await _dio.post('/auth/register', data: request.toJson());
       return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // Enhanced authentication endpoints
+  Future<Map<String, dynamic>> enhancedLogin(EnhancedLoginRequest request) async {
+    try {
+      final response = await _dio.post('/auth/enhanced-login', data: request.toJson());
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> refreshToken(String refreshToken, String sessionId) async {
+    try {
+      final response = await _dio.post('/auth/refresh-token', data: {
+        'refresh_token': refreshToken,
+        'session_id': sessionId,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getUserSessions() async {
+    try {
+      final response = await _dio.get('/auth/sessions');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> revokeSession(String sessionId) async {
+    try {
+      await _dio.delete('/auth/sessions/$sessionId');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> revokeAllSessions() async {
+    try {
+      await _dio.delete('/auth/sessions/all');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<EnhancedAuthResult> biometricLogin(String email, String sessionId, DeviceFingerprint deviceInfo) async {
+    try {
+      final response = await _dio.post('/auth/biometric-login', data: {
+        'email': email,
+        'session_id': sessionId,
+        'device_info': deviceInfo.toJson(),
+      });
+      return EnhancedAuthResult.fromResponse(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -79,6 +148,26 @@ class ApiService {
     }
   }
 
+  // Forgot password
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _dio.post('/auth/request-password-reset', data: {'email': email});
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> resetPassword(String email, String otp, String newPassword) async {
+    try {
+      await _dio.post('/auth/reset-password', data: {
+        'email': email,
+        'otp': otp,
+        'new_password': newPassword,
+      });
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
   // User endpoints
   Future<User> getUserProfile() async {
     try {
@@ -224,30 +313,62 @@ class ApiService {
     }
   }
 
-  String _handleError(DioException error) {
+  Never _handleError(DioException error) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return 'Connection timeout. Please check your internet connection.';
+        throw const AuthException('Connection timeout. Please check your internet connection.');
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
-        final message = error.response?.data?['error'] ?? 'An error occurred';
-        if (statusCode == 401) {
-          return 'Unauthorized. Please login again.';
+        final responseData = error.response?.data;
+        final message = responseData?['error'] ?? 'An error occurred';
+        
+        if (statusCode == 409) {
+          print('🔴 API Service: Got 409 response with message: $message');
+          print('🔴 API Service: Response data: $responseData');
+          
+          // Handle specific 409 conflicts
+          if (message.toLowerCase().contains('already exists') || 
+              message.toLowerCase().contains('user already exists')) {
+            // Extract email from request if available
+            final email = _extractEmailFromError(error) ?? 'unknown';
+            print('🔴 API Service: Throwing EmailAlreadyExistsException with email: $email');
+            throw EmailAlreadyExistsException(email);
+          }
+        } else if (statusCode == 401) {
+          if (message.toLowerCase().contains('invalid credentials') ||
+              message.toLowerCase().contains('invalid email or password')) {
+            throw const InvalidCredentialsException();
+          }
+          throw const AuthException('Unauthorized. Please login again.');
         } else if (statusCode == 404) {
-          return 'Resource not found.';
+          throw const AuthException('Resource not found.');
         } else if (statusCode == 500) {
-          return 'Server error. Please try again later.';
+          throw const AuthException('Server error. Please try again later.');
         }
-        return message;
+        
+        throw AuthException(message);
       case DioExceptionType.cancel:
-        return 'Request cancelled.';
+        throw const AuthException('Request cancelled.');
       case DioExceptionType.connectionError:
-        return 'No internet connection. Please check your network.';
+        throw const AuthException('No internet connection. Please check your network.');
       default:
-        return 'An unexpected error occurred.';
+        throw const AuthException('An unexpected error occurred.');
     }
+  }
+
+  String? _extractEmailFromError(DioException error) {
+    try {
+      // Try to extract email from the request data
+      final requestData = error.requestOptions.data;
+      if (requestData is Map<String, dynamic>) {
+        return requestData['email'] as String?;
+      }
+    } catch (e) {
+      // Ignore extraction errors
+    }
+    return null;
   }
 }
 

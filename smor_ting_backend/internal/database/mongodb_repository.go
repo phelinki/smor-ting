@@ -40,7 +40,7 @@ func (r *MongoDBRepository) CreateUser(ctx context.Context, user *models.User) e
 	// Initialize wallet
 	user.Wallet = models.Wallet{
 		Balance:     0,
-		Currency:    "KES",
+		Currency:    "LRD",
 		LastUpdated: time.Now(),
 	}
 
@@ -142,6 +142,25 @@ func (r *MongoDBRepository) MarkOTPAsUsed(ctx context.Context, id primitive.Obje
 	}
 
 	return nil
+}
+
+// GetLatestOTPByEmail returns the most recent unused, unexpired OTP for an email
+func (r *MongoDBRepository) GetLatestOTPByEmail(ctx context.Context, email string) (*models.OTPRecord, error) {
+	collection := r.db.Collection("otp_records")
+	opts := options.FindOne().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	var otp models.OTPRecord
+	err := collection.FindOne(ctx, bson.M{
+		"email":      email,
+		"is_used":    false,
+		"expires_at": bson.M{"$gt": time.Now()},
+	}, opts).Decode(&otp)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("no otp found")
+		}
+		return nil, fmt.Errorf("failed to get latest otp: %w", err)
+	}
+	return &otp, nil
 }
 
 // Service operations with embedded documents

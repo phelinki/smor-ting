@@ -7,6 +7,8 @@ import '../../auth/presentation/pages/landing_page.dart';
 import '../../auth/presentation/pages/new_login_page.dart';
 import '../../auth/presentation/pages/new_register_page.dart';
 import '../../auth/presentation/pages/otp_verification_page.dart';
+import '../../auth/presentation/pages/forgot_password_page.dart';
+import '../../auth/presentation/pages/reset_password_page.dart';
 import '../../home/presentation/pages/home_page.dart';
 import '../../splash/presentation/pages/splash_page.dart';
 import '../../splash/presentation/pages/onboarding_page.dart';
@@ -79,6 +81,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const NewLoginPage(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ResetPasswordPage(email: email);
+        },
       ),
       GoRoute(
         path: '/register',

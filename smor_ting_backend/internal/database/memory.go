@@ -54,7 +54,7 @@ func (m *MemoryDatabase) CreateUser(ctx context.Context, user *models.User) erro
 	// Initialize wallet
 	user.Wallet = models.Wallet{
 		Balance:     0,
-		Currency:    "KES",
+		Currency:    "LRD",
 		LastUpdated: time.Now(),
 	}
 
@@ -146,6 +146,25 @@ func (m *MemoryDatabase) MarkOTPAsUsed(ctx context.Context, id primitive.ObjectI
 
 	otp.IsUsed = true
 	return nil
+}
+
+// GetLatestOTPByEmail returns the most recent unused, unexpired OTP for an email
+func (m *MemoryDatabase) GetLatestOTPByEmail(ctx context.Context, email string) (*models.OTPRecord, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var latest *models.OTPRecord
+	for _, otp := range m.otpRecords {
+		if otp.Email == email && !otp.IsUsed && otp.ExpiresAt.After(time.Now()) {
+			if latest == nil || otp.CreatedAt.After(latest.CreatedAt) {
+				latest = otp
+			}
+		}
+	}
+	if latest == nil {
+		return nil, errors.New("no otp found")
+	}
+	return latest, nil
 }
 
 // Service operations
