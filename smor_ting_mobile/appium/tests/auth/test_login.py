@@ -38,11 +38,21 @@ class TestLogin(BaseTest):
         try:
             # Navigate to registration first
             self.splash_page.wait_for_splash_to_complete()
-            
-            # Check if we need to navigate to registration
-            if not self.registration_page.is_element_present(self.registration_page.REGISTER_BUTTON, timeout=5):
+
+            # Prefer landing → registration
+            try:
+                landing = PageFactory.get_landing_page(self.driver)
+                landing.goto_register()
+            except Exception:
+                # Fallback: from login page, use register link
                 if self.login_page.is_element_present(self.login_page.REGISTER_LINK, timeout=5):
                     self.login_page.tap_register_link()
+                else:
+                    # As last resort, try tapping any visible Register button by text
+                    try:
+                        self.registration_page.tap(self.registration_page.REGISTER_BUTTON_FALLBACK, timeout=2)
+                    except Exception:
+                        pass
             
             # Register the test user
             self.registration_page.fill_registration_form(user_data)
@@ -67,19 +77,29 @@ class TestLogin(BaseTest):
         try:
             # Wait for splash if present
             self.splash_page.wait_for_splash_to_complete()
-            
-            # Check if we're already on login page
-            if not self.login_page.is_element_present(self.login_page.LOGIN_BUTTON, timeout=5):
-                # Try to find login link if on registration page
-                if self.registration_page.is_element_present(self.registration_page.LOGIN_LINK, timeout=5):
+
+            # Use robust helper that can navigate via landing/registration
+            self.login_page.ensure_on_login(timeout=10)
+
+            # If still not present, try landing → login explicitly
+            if not self.login_page.is_element_present(self.login_page.LOGIN_BUTTON, timeout=3):
+                try:
+                    landing = PageFactory.get_landing_page(self.driver)
+                    landing.goto_login()
+                except Exception:
+                    pass
+
+            # As a final fallback, try registration → login link
+            if not self.login_page.is_element_present(self.login_page.LOGIN_BUTTON, timeout=3):
+                if self.registration_page.is_element_present(self.registration_page.LOGIN_LINK, timeout=3):
                     self.registration_page.tap_login_link()
-                    
+
         except Exception as e:
             self.logger.warning(f"Navigation to login page: {e}")
-        
+
         # Verify we're on login page
         self.login_page.assert_element_present(
-            self.login_page.LOGIN_BUTTON,
+            self.login_page.choose_locator(self.login_page.LOGIN_BUTTON, self.login_page.LOGIN_BUTTON_FALLBACK),
             "Failed to navigate to login page"
         )
 

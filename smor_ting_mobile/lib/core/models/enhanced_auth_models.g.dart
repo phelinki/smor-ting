@@ -43,6 +43,9 @@ EnhancedAuthResult _$EnhancedAuthResultFromJson(Map<String, dynamic> json) =>
       requiresVerification: json['requires_verification'] as bool? ?? false,
       deviceTrusted: json['device_trusted'] as bool? ?? false,
       isRestoredSession: json['is_restored_session'] as bool? ?? false,
+      requiresCaptcha: json['requires_captcha'] as bool? ?? false,
+      remainingAttempts: json['remaining_attempts'] as int?,
+      lockoutInfo: json['lockout_info'] == null ? null : LockoutInfo.fromJson(json['lockout_info'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$EnhancedAuthResultToJson(EnhancedAuthResult instance) => <String, dynamic>{
@@ -58,6 +61,9 @@ Map<String, dynamic> _$EnhancedAuthResultToJson(EnhancedAuthResult instance) => 
       'requires_verification': instance.requiresVerification,
       'device_trusted': instance.deviceTrusted,
       'is_restored_session': instance.isRestoredSession,
+      'requires_captcha': instance.requiresCaptcha,
+      'remaining_attempts': instance.remainingAttempts,
+      'lockout_info': instance.lockoutInfo?.toJson(),
     };
 
 SessionInfo _$SessionInfoFromJson(Map<String, dynamic> json) => SessionInfo(

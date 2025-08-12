@@ -37,7 +37,7 @@ class LandingPage(BasePage):
     )
     SIGN_IN_FALLBACK = (
         AppiumBy.XPATH,
-        "//android.widget.Button[contains(@text, 'Sign In') or contains(@text, 'Login') or contains(@text, 'Returning User')]",
+        "//*[self::XCUIElementTypeButton or self::android.widget.Button][contains(@name, 'Sign In') or contains(@name, 'Login') or contains(@label, 'Sign In') or contains(@label, 'Login') or contains(@text, 'Sign In') or contains(@text, 'Login') or contains(@text, 'Returning User')]",
     )
 
     REGISTER_BUTTON = (
@@ -46,7 +46,7 @@ class LandingPage(BasePage):
     )
     REGISTER_FALLBACK = (
         AppiumBy.XPATH,
-        "//android.widget.Button[contains(@text, 'Register') or contains(@text, 'Sign Up') or contains(@text, 'New User')]",
+        "//*[self::XCUIElementTypeButton or self::android.widget.Button][contains(@name, 'Register') or contains(@label, 'Register') or contains(@text, 'Register') or contains(@text, 'Sign Up') or contains(@text, 'New User')]",
     )
 
     def goto_login(self):
@@ -66,30 +66,30 @@ class RegistrationPage(BasePage):
     # Flutter keys and fallback locators for better element discovery
     EMAIL_FLUTTER_KEY = "register_email"
     EMAIL_FIELD = (AppiumBy.ACCESSIBILITY_ID, "register_email")
-    EMAIL_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'email') or contains(@hint, 'Email')]")
+    EMAIL_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeTextField' or self::android.widget.EditText][contains(@name, 'email') or contains(@label, 'Email') or contains(@hint, 'Email')]")
     
     PASSWORD_FLUTTER_KEY = "register_password"
     PASSWORD_FIELD = (AppiumBy.ACCESSIBILITY_ID, "register_password")
-    PASSWORD_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'password') or contains(@hint, 'Password')]")
+    PASSWORD_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeSecureTextField' or self::android.widget.EditText][contains(@name, 'password') or contains(@label, 'Password') or contains(@hint, 'Password')]")
     
     CONFIRM_PASSWORD_FLUTTER_KEY = "register_confirm_password"
     CONFIRM_PASSWORD_FIELD = (AppiumBy.ACCESSIBILITY_ID, "register_confirm_password")
-    CONFIRM_PASSWORD_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'confirm') or contains(@hint, 'Confirm')]")
+    CONFIRM_PASSWORD_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeSecureTextField' or self::android.widget.EditText][contains(@name, 'confirm') or contains(@label, 'Confirm') or contains(@hint, 'Confirm')]")
     
     FIRST_NAME_FLUTTER_KEY = "register_first_name"
     FIRST_NAME_FIELD = (AppiumBy.ACCESSIBILITY_ID, "register_first_name")
-    FIRST_NAME_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'first') or contains(@hint, 'First')]")
+    FIRST_NAME_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeTextField' or self::android.widget.EditText][contains(@name, 'first') or contains(@label, 'First') or contains(@hint, 'First')]")
     
     LAST_NAME_FLUTTER_KEY = "register_last_name"
     LAST_NAME_FIELD = (AppiumBy.ACCESSIBILITY_ID, "register_last_name")
-    LAST_NAME_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'last') or contains(@hint, 'Last')]")
+    LAST_NAME_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeTextField' or self::android.widget.EditText][contains(@name, 'last') or contains(@label, 'Last') or contains(@hint, 'Last')]")
     
     PHONE_FLUTTER_KEY = "register_phone"
     PHONE_FIELD = (AppiumBy.ACCESSIBILITY_ID, "register_phone")
-    PHONE_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'phone') or contains(@hint, 'Phone')]")
+    PHONE_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeTextField' or self::android.widget.EditText][contains(@name, 'phone') or contains(@label, 'Phone') or contains(@hint, 'Phone')]")
     
     # Role selection locators
-    ROLE_DROPDOWN = (AppiumBy.XPATH, "//android.widget.Spinner[contains(@content-desc, 'role') or contains(@hint, 'Role')]")
+    ROLE_DROPDOWN = (AppiumBy.XPATH, "//*[@type='XCUIElementTypePicker' or contains(@name, 'role') or contains(@label, 'Role') or self::android.widget.Spinner]")
     CUSTOMER_ROLE = (AppiumBy.XPATH, "//*[contains(@text, 'Customer')]")
     PROVIDER_ROLE = (AppiumBy.XPATH, "//*[contains(@text, 'Provider')]")
     ADMIN_ROLE = (AppiumBy.XPATH, "//*[contains(@text, 'Admin')]")
@@ -97,13 +97,13 @@ class RegistrationPage(BasePage):
     # Button locators with Flutter keys
     REGISTER_FLUTTER_KEY = "register_submit"
     REGISTER_BUTTON = (AppiumBy.ACCESSIBILITY_ID, "register_submit")
-    REGISTER_BUTTON_FALLBACK = (AppiumBy.XPATH, "//android.widget.Button[contains(@text, 'Register') or contains(@content-desc, 'Register')]")
+    REGISTER_BUTTON_FALLBACK = (AppiumBy.XPATH, "//*[self::XCUIElementTypeButton or self::android.widget.Button][contains(@name, 'Register') or contains(@label, 'Register') or contains(@text, 'Register')]")
     REGISTER_AS_CUSTOMER_BUTTON = (AppiumBy.XPATH, "//android.widget.Button[contains(@text, 'Register as Customer')]")
     REGISTER_AS_AGENT_BUTTON = (AppiumBy.XPATH, "//android.widget.Button[contains(@text, 'Register as Agent')]")
     LOGIN_LINK = (AppiumBy.ACCESSIBILITY_ID, "register_to_login")
     LOGIN_LINK_FALLBACK = (
         AppiumBy.XPATH,
-        "//*[contains(@text, 'Login') or contains(@text, 'Sign In')]",
+        "//*[contains(@name, 'Login') or contains(@label, 'Login') or contains(@text, 'Login') or contains(@text, 'Sign In')]",
     )
     
     # Validation error locators
@@ -204,15 +204,15 @@ class LoginPage(BasePage):
     
     # Form field locators
     EMAIL_FIELD = (AppiumBy.ACCESSIBILITY_ID, "login_email")
-    EMAIL_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'email') or contains(@hint, 'Email')]")
+    EMAIL_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeTextField' or self::android.widget.EditText][contains(@name, 'email') or contains(@label, 'Email') or contains(@hint, 'Email')]")
     PASSWORD_FIELD = (AppiumBy.ACCESSIBILITY_ID, "login_password")
-    PASSWORD_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'password') or contains(@hint, 'Password')]")
+    PASSWORD_FALLBACK = (AppiumBy.XPATH, "//*[@type='XCUIElementTypeSecureTextField' or self::android.widget.EditText][contains(@name, 'password') or contains(@label, 'Password') or contains(@hint, 'Password')]")
     
     # Button locators
     LOGIN_BUTTON = (AppiumBy.ACCESSIBILITY_ID, "login_submit")
-    LOGIN_BUTTON_FALLBACK = (AppiumBy.XPATH, "//android.widget.Button[contains(@text, 'Login') or contains(@text, 'Sign In')]")
+    LOGIN_BUTTON_FALLBACK = (AppiumBy.XPATH, "//*[self::XCUIElementTypeButton or self::android.widget.Button][contains(@name, 'Login') or contains(@label, 'Login') or contains(@text, 'Login') or contains(@text, 'Sign In')]")
     REGISTER_LINK = (AppiumBy.ACCESSIBILITY_ID, "login_register_link")
-    REGISTER_LINK_FALLBACK = (AppiumBy.XPATH, "//*[contains(@text, 'Register') or contains(@text, 'Sign Up')]")
+    REGISTER_LINK_FALLBACK = (AppiumBy.XPATH, "//*[contains(@name, 'Register') or contains(@label, 'Register') or contains(@text, 'Register') or contains(@text, 'Sign Up')]")
     # Forgot password now has a Semantics id in Flutter
     FORGOT_PASSWORD_LINK = (AppiumBy.ACCESSIBILITY_ID, "login_forgot_password")
     FORGOT_PASSWORD_ANDROID_UIA = (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().textContains("Forgot Password")')

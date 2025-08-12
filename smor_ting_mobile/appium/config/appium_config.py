@@ -80,17 +80,28 @@ class AppiumConfig:
             "deviceName": os.getenv("IOS_DEVICE_NAME", "iPhone 13"),
             "automationName": "XCUITest",
             "app": self.app_build_path,
-            "bundleId": "com.smorting.app.smor-ting-mobile",
+            # bundleId is optional when launching a local app path; omit by default to avoid mismatch
+            # Set IOS_BUNDLE_ID env var to force a specific bundle id if needed
+            **({"bundleId": os.getenv("IOS_BUNDLE_ID")} if os.getenv("IOS_BUNDLE_ID") else {}),
             "noReset": False,
             "fullReset": True,
             "newCommandTimeout": 300,
-            "wdaLaunchTimeout": 60000,
-            "wdaConnectionTimeout": 60000,
+            # Increase WDA timeouts for reliability on fresh environments
+            "wdaLaunchTimeout": int(os.getenv("WDA_LAUNCH_TIMEOUT_MS", "180000")),
+            "wdaConnectionTimeout": int(os.getenv("WDA_CONNECTION_TIMEOUT_MS", "180000")),
+            # Retry WDA startup to reduce flakiness
+            "wdaStartupRetries": int(os.getenv("WDA_STARTUP_RETRIES", "2")),
+            "wdaStartupRetryInterval": int(os.getenv("WDA_STARTUP_RETRY_INTERVAL_MS", "5000")),
             "iosInstallPause": 8000,
+            # Auto-accept system alerts (e.g., notifications, permissions)
+            "autoAcceptAlerts": True,
             "xcodeOrgId": os.getenv("XCODE_ORG_ID"),
             "xcodeSigningId": os.getenv("XCODE_SIGNING_ID", "iPhone Developer"),
             "updatedWDABundleId": os.getenv("WDA_BUNDLE_ID"),
-            "usePrebuiltWDA": True,
+            # Let Appium build WDA automatically unless explicitly overridden
+            "usePrebuiltWDA": os.getenv("USE_PREBUILT_WDA", "0") == "1",
+            # Surface detailed xcodebuild logs in Appium output for troubleshooting
+            "showXcodeLog": True,
             "shouldUseSingletonTestManager": False,
         }
         
@@ -98,7 +109,8 @@ class AppiumConfig:
         if "Simulator" in capabilities["deviceName"] or self.environment == "ci":
             capabilities.update({
                 "isSimulator": True,
-                "simulatorStartupTimeout": 120000,
+                # Give Simulator ample time to boot on cold starts
+                "simulatorStartupTimeout": int(os.getenv("SIMULATOR_STARTUP_TIMEOUT_MS", "300000")),
                 "useSimulatorPasteboard": True,
             })
             

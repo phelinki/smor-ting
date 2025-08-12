@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="0" tests="5" time="2.125" timestamp="2025-08-12T00:20:58.441977" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_visibility_when_available" time="0.104"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:101: in setup_method
+    super().setup_method(method)
+tests/base_test.py:68: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_disable_biometric_authentication" time="0.106"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:101: in setup_method
+    super().setup_method(method)
+tests/base_test.py:68: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_persistence" time="0.124"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:101: in setup_method
+    super().setup_method(method)
+tests/base_test.py:68: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_flow" time="0.098"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:101: in setup_method
+    super().setup_method(method)
+tests/base_test.py:68: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="0.119"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:68: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

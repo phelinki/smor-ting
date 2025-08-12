@@ -2,54 +2,72 @@ package models
 
 import (
 	"time"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // EnhancedLoginRequest represents an enhanced login request with additional security features
 type EnhancedLoginRequest struct {
-	Email            string `json:"email" validate:"required,email"`
-	Password         string `json:"password" validate:"required,min=6"`
-	DeviceFingerprint string `json:"device_fingerprint,omitempty"`
-	ClientIP         string `json:"client_ip,omitempty"`
-	UserAgent        string `json:"user_agent,omitempty"`
-	CaptchaToken     string `json:"captcha_token,omitempty"`
-	TwoFactorCode    string `json:"two_factor_code,omitempty"`
-	BiometricData    string `json:"biometric_data,omitempty"`
-	SessionID        string `json:"session_id,omitempty"`
+	Email             string             `json:"email" validate:"required,email"`
+	Password          string             `json:"password" validate:"required,min=6"`
+	RememberMe        bool               `json:"remember_me,omitempty"`
+	DeviceInfo        *DeviceFingerprint `json:"device_info,omitempty"`
+	DeviceFingerprint string             `json:"device_fingerprint,omitempty"`
+	ClientIP          string             `json:"client_ip,omitempty"`
+	UserAgent         string             `json:"user_agent,omitempty"`
+	CaptchaToken      string             `json:"captcha_token,omitempty"`
+	TwoFactorCode     string             `json:"two_factor_code,omitempty"`
+	BiometricData     string             `json:"biometric_data,omitempty"`
+	SessionID         string             `json:"session_id,omitempty"`
+}
+
+// DeviceFingerprint represents device identification information
+type DeviceFingerprint struct {
+	DeviceID    string `json:"device_id"`
+	DeviceName  string `json:"device_name"`
+	DeviceType  string `json:"device_type"`
+	Platform    string `json:"platform,omitempty"`
+	OSVersion   string `json:"os_version"`
+	AppVersion  string `json:"app_version"`
+	ScreenInfo  string `json:"screen_info,omitempty"`
+	UserAgent   string `json:"user_agent,omitempty"`
+	Fingerprint string `json:"fingerprint"` // Computed hash of device characteristics
 }
 
 // EnhancedAuthResult represents the result of an enhanced authentication attempt
 type EnhancedAuthResult struct {
-	Success              bool       `json:"success"`
-	Message              string     `json:"message,omitempty"`
-	User                 *User      `json:"user,omitempty"`
-	AccessToken          string     `json:"access_token,omitempty"`
-	RefreshToken         string     `json:"refresh_token,omitempty"`
-	SessionID            string     `json:"session_id,omitempty"`
-	TokenExpiresAt       *time.Time `json:"token_expires_at,omitempty"`
-	RefreshExpiresAt     *time.Time `json:"refresh_expires_at,omitempty"`
-	RequiresTwoFactor    bool       `json:"requires_two_factor"`
-	RequiresVerification bool       `json:"requires_verification"`
-	RequiresCaptcha      bool       `json:"requires_captcha"`
-	DeviceTrusted        bool       `json:"device_trusted"`
-	IsRestoredSession    bool       `json:"is_restored_session"`
-	RemainingAttempts    *int       `json:"remaining_attempts,omitempty"`
+	Success              bool         `json:"success"`
+	Message              string       `json:"message,omitempty"`
+	User                 *User        `json:"user,omitempty"`
+	AccessToken          string       `json:"access_token,omitempty"`
+	RefreshToken         string       `json:"refresh_token,omitempty"`
+	SessionID            string       `json:"session_id,omitempty"`
+	TokenExpiresAt       *time.Time   `json:"token_expires_at,omitempty"`
+	RefreshExpiresAt     *time.Time   `json:"refresh_expires_at,omitempty"`
+	RequiresTwoFactor    bool         `json:"requires_two_factor"`
+	RequiresVerification bool         `json:"requires_verification"`
+	RequiresCaptcha      bool         `json:"requires_captcha"`
+	DeviceTrusted        bool         `json:"device_trusted"`
+	IsRestoredSession    bool         `json:"is_restored_session"`
+	RemainingAttempts    *int         `json:"remaining_attempts,omitempty"`
 	LockoutInfo          *LockoutInfo `json:"lockout_info,omitempty"`
 }
 
 // SessionInfo represents information about a user session
 type SessionInfo struct {
-	SessionID    string    `json:"session_id" bson:"session_id"`
-	UserID       string    `json:"user_id" bson:"user_id"`
-	DeviceName   string    `json:"device_name" bson:"device_name"`
-	DeviceType   string    `json:"device_type" bson:"device_type"`
-	IPAddress    string    `json:"ip_address" bson:"ip_address"`
-	UserAgent    string    `json:"user_agent" bson:"user_agent"`
-	LastActivity time.Time `json:"last_activity" bson:"last_activity"`
-	CreatedAt    time.Time `json:"created_at" bson:"created_at"`
-	ExpiresAt    time.Time `json:"expires_at" bson:"expires_at"`
-	IsCurrent    bool      `json:"is_current" bson:"is_current"`
-	IsRevoked    bool      `json:"is_revoked" bson:"is_revoked"`
+	SessionID    string             `json:"session_id" bson:"session_id"`
+	UserID       string             `json:"user_id" bson:"user_id"`
+	DeviceName   string             `json:"device_name" bson:"device_name"`
+	DeviceType   string             `json:"device_type" bson:"device_type"`
+	DeviceInfo   *DeviceFingerprint `json:"device_info,omitempty" bson:"device_info,omitempty"`
+	IPAddress    string             `json:"ip_address" bson:"ip_address"`
+	UserAgent    string             `json:"user_agent" bson:"user_agent"`
+	LastActivity time.Time          `json:"last_activity" bson:"last_activity"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
+	ExpiresAt    time.Time          `json:"expires_at" bson:"expires_at"`
+	IsCurrent    bool               `json:"is_current" bson:"is_current"`
+	IsRevoked    bool               `json:"is_revoked" bson:"is_revoked"`
+	IsRemembered bool               `json:"is_remembered" bson:"is_remembered"`
 }
 
 // LockoutInfo represents information about account lockout

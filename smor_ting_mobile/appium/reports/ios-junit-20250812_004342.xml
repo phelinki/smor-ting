@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="0" tests="5" time="3852.236" timestamp="2025-08-12T00:43:43.364049" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="172.890"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:81: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="174.723"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:81: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="1665.523"><error message="failed on setup with &quot;selenium.common.exceptions.InvalidSessionIdException: Message: A session is either terminated or not started&#10;Stacktrace:&#10;NoSuchDriverError: A session is either terminated or not started&#10;    at asyncHandler (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:311:15)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:514:15&#10;    at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)&#10;    at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:149:13)&#10;    at Route.dispatch (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:119:3)&#10;    at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:284:15&#10;    at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:365:14)&#10;    at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:376:14)&#10;    at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:421:3)&#10;    at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)&#10;    at logger (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/morgan/index.js:144:5)&#10;    at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)&#10;    at trim_prefix (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:328:13)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:286:9&#10;    at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:346:12)&#10;    at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/body-parser/lib/read.js:137:5&#10;    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)&#10;    at invokeCallback (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:238:16)&#10;    at done (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:227:7)&#10;    at IncomingMessage.onEnd (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:287:7)&#10;    at IncomingMessage.emit (node:events:518:28)&#10;    at endReadableNT (node:internal/streams/readable:1698:12)&#10;    at processTicksAndRejections (node:internal/process/task_queues:90:21)&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:71: in setup_method
+    self.driver.implicitly_wait(self.config.implicit_wait)
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/remote/webdriver.py:653: in implicitly_wait
+    self.execute(Command.SET_TIMEOUTS, {"implicit": int(float(time_to_wait) * 1000)})
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/errorhandler.py:125: in check_response
+    raise exception_class(msg=message, stacktrace=format_stacktrace(stacktrace))
+E   selenium.common.exceptions.InvalidSessionIdException: Message: A session is either terminated or not started
+E   Stacktrace:
+E   NoSuchDriverError: A session is either terminated or not started
+E       at asyncHandler (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:311:15)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:514:15
+E       at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+E       at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:149:13)
+E       at Route.dispatch (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:119:3)
+E       at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:284:15
+E       at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:365:14)
+E       at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:376:14)
+E       at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:421:3)
+E       at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+E       at logger (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/morgan/index.js:144:5)
+E       at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+E       at trim_prefix (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:328:13)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:286:9
+E       at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:346:12)
+E       at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/body-parser/lib/read.js:137:5
+E       at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+E       at invokeCallback (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:238:16)
+E       at done (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:227:7)
+E       at IncomingMessage.onEnd (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:287:7)
+E       at IncomingMessage.emit (node:events:518:28)
+E       at endReadableNT (node:internal/streams/readable:1698:12)
+E       at processTicksAndRejections (node:internal/process/task_queues:90:21)</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="81.483"><error message="failed on setup with &quot;selenium.common.exceptions.InvalidSessionIdException: Message: A session is either terminated or not started&#10;Stacktrace:&#10;NoSuchDriverError: A session is either terminated or not started&#10;    at asyncHandler (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:311:15)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:514:15&#10;    at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)&#10;    at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:149:13)&#10;    at Route.dispatch (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:119:3)&#10;    at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:284:15&#10;    at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:365:14)&#10;    at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:376:14)&#10;    at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:421:3)&#10;    at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)&#10;    at logger (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/morgan/index.js:144:5)&#10;    at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)&#10;    at trim_prefix (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:328:13)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:286:9&#10;    at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:346:12)&#10;    at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)&#10;    at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/body-parser/lib/read.js:137:5&#10;    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)&#10;    at invokeCallback (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:238:16)&#10;    at done (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:227:7)&#10;    at IncomingMessage.onEnd (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:287:7)&#10;    at IncomingMessage.emit (node:events:518:28)&#10;    at endReadableNT (node:internal/streams/readable:1698:12)&#10;    at processTicksAndRejections (node:internal/process/task_queues:90:21)&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:81: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+tests/common/page_objects/base_page.py:126: in is_element_present
+    self.wait_for_element(locator, timeout)
+tests/common/page_objects/base_page.py:78: in wait_for_element
+    return wait.until(EC.presence_of_element_located(locator))
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:96: in until
+    value = method(self._driver)
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/expected_conditions.py:84: in _predicate
+    return driver.find_element(*locator)
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/webdriver.py:384: in find_element
+    return self.execute(RemoteCommand.FIND_ELEMENT, {'using': by, 'value': value})['value']
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/errorhandler.py:125: in check_response
+    raise exception_class(msg=message, stacktrace=format_stacktrace(stacktrace))
+E   selenium.common.exceptions.InvalidSessionIdException: Message: A session is either terminated or not started
+E   Stacktrace:
+E   NoSuchDriverError: A session is either terminated or not started
+E       at asyncHandler (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:311:15)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:514:15
+E       at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+E       at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:149:13)
+E       at Route.dispatch (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/route.js:119:3)
+E       at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:284:15
+E       at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:365:14)
+E       at param (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:376:14)
+E       at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:421:3)
+E       at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+E       at logger (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/morgan/index.js:144:5)
+E       at Layer.handle [as handle_request] (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+E       at trim_prefix (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:328:13)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:286:9
+E       at Function.process_params (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:346:12)
+E       at next (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+E       at /Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/body-parser/lib/read.js:137:5
+E       at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+E       at invokeCallback (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:238:16)
+E       at done (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:227:7)
+E       at IncomingMessage.onEnd (/Users/kaleewou/.npm-global/lib/node_modules/appium/node_modules/raw-body/index.js:287:7)
+E       at IncomingMessage.emit (node:events:518:28)
+E       at endReadableNT (node:internal/streams/readable:1698:12)
+E       at processTicksAndRejections (node:internal/process/task_queues:90:21)</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_password" time="46.856"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:68: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

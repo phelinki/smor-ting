@@ -90,7 +90,7 @@ func NewStubEnhancedAuthService(logger *zap.Logger) *StubEnhancedAuthService {
 
 func (s *StubEnhancedAuthService) EnhancedLogin(req *models.EnhancedLoginRequest, clientIP string) (*models.EnhancedAuthResult, error) {
 	s.logger.Info("Stub enhanced login", zap.String("email", req.Email), zap.String("clientIP", clientIP))
-	
+
 	// Return a stub successful result
 	return &models.EnhancedAuthResult{
 		Success:              true,
@@ -105,7 +105,7 @@ func (s *StubEnhancedAuthService) EnhancedLogin(req *models.EnhancedLoginRequest
 
 func (s *StubEnhancedAuthService) BiometricLogin(sessionID, biometricData string) (*models.EnhancedAuthResult, error) {
 	s.logger.Info("Stub biometric login", zap.String("sessionID", sessionID))
-	
+
 	return &models.EnhancedAuthResult{
 		Success:              true,
 		Message:              "Biometric login successful (stub)",
@@ -119,7 +119,7 @@ func (s *StubEnhancedAuthService) BiometricLogin(sessionID, biometricData string
 
 func (s *StubEnhancedAuthService) GetUserSessions(userID string) ([]*models.SessionInfo, error) {
 	s.logger.Info("Stub get user sessions", zap.String("userID", userID))
-	
+
 	// Return stub session data
 	return []*models.SessionInfo{
 		{
@@ -146,7 +146,7 @@ func (s *StubEnhancedAuthService) SignOutAllDevices(userID string) error {
 
 func (s *StubEnhancedAuthService) RefreshTokenWithSession(refreshToken, sessionID string) (*models.EnhancedAuthResult, error) {
 	s.logger.Info("Stub refresh token with session", zap.String("sessionID", sessionID))
-	
+
 	return &models.EnhancedAuthResult{
 		Success:              true,
 		Message:              "Token refreshed (stub)",
@@ -158,4 +158,50 @@ func (s *StubEnhancedAuthService) RefreshTokenWithSession(refreshToken, sessionI
 		DeviceTrusted:        true,
 		IsRestoredSession:    true,
 	}, nil
+}
+
+func (s *StubEnhancedAuthService) GetSessionByID(sessionID string) (*models.SessionInfo, error) {
+	s.logger.Info("Stub get session by ID", zap.String("sessionID", sessionID))
+
+	return &models.SessionInfo{
+		SessionID:  sessionID,
+		UserID:     "user-123",
+		DeviceName: "Test Device",
+		DeviceType: "mobile",
+		IPAddress:  "192.168.1.100",
+		IsCurrent:  true,
+		IsRevoked:  false,
+	}, nil
+}
+
+func (s *StubEnhancedAuthService) RevokeAllSessions(userID string) error {
+	s.logger.Info("Stub revoke all sessions", zap.String("userID", userID))
+	return nil
+}
+
+func (s *StubEnhancedAuthService) VerifyDeviceFingerprint(existing, provided *models.DeviceFingerprint) bool {
+	s.logger.Info("Stub verify device fingerprint")
+	// For stub, always return true
+	return true
+}
+
+func (s *StubEnhancedAuthService) GenerateTokensForExistingSession(sessionID string) (*models.EnhancedAuthResult, error) {
+	s.logger.Info("Stub generate tokens for existing session", zap.String("sessionID", sessionID))
+
+	return &models.EnhancedAuthResult{
+		Success:              true,
+		Message:              "Tokens generated (stub)",
+		AccessToken:          "new_access_token_stub",
+		RefreshToken:         "new_refresh_token_stub",
+		RequiresTwoFactor:    false,
+		RequiresVerification: false,
+		RequiresCaptcha:      false,
+		DeviceTrusted:        true,
+		IsRestoredSession:    true,
+	}, nil
+}
+
+func (s *StubEnhancedAuthService) UpdateSessionActivity(sessionID string) error {
+	s.logger.Info("Stub update session activity", zap.String("sessionID", sessionID))
+	return nil
 }

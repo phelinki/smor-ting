@@ -101,7 +101,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     return BiometricSettingsWidget(userEmail: user.email);
                   },
                   orElse: () => const SizedBox.shrink(),
-                );
+                ) ?? const SizedBox.shrink();
               },
             ),
 

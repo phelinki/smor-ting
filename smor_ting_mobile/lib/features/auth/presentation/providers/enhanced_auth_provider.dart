@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/models/user.dart';
+import '../../../../core/models/enhanced_auth_models.dart';
 import '../../../../core/services/enhanced_auth_service.dart';
 import '../../../../core/services/session_manager.dart';
 
@@ -216,7 +217,7 @@ class EnhancedAuthNotifier extends _$EnhancedAuthNotifier {
       authenticated: (_, __, ___, ____, _____, requiresVerification) => 
           requiresVerification ?? false,
       orElse: () => false,
-    );
+    ) ?? false;
   }
 
   /// Check if device is trusted
@@ -225,7 +226,7 @@ class EnhancedAuthNotifier extends _$EnhancedAuthNotifier {
       authenticated: (_, __, ___, deviceTrusted, ____, _____) => deviceTrusted,
       requiresTwoFactor: (_, __, deviceTrusted) => deviceTrusted,
       orElse: () => false,
-    );
+    ) ?? false;
   }
 
   /// Get current user
@@ -233,7 +234,7 @@ class EnhancedAuthNotifier extends _$EnhancedAuthNotifier {
     return state.maybeWhen(
       authenticated: (user, _, __, ___, ____, _____) => user,
       orElse: () => null,
-    );
+    ) as User?;
   }
 
   /// Check if user is authenticated
@@ -241,7 +242,7 @@ class EnhancedAuthNotifier extends _$EnhancedAuthNotifier {
     return state.maybeWhen(
       authenticated: (_, __, ___, ____, _____, ______) => true,
       orElse: () => false,
-    );
+    ) ?? false;
   }
 
   /// Clear error state

@@ -33,7 +33,8 @@
     "allure-commandline": "^2.24.1",
     "appium": "^2.0.0",
     "appium-flutter-driver": "^2.18.1",
-    "appium-uiautomator2-driver": "^4.2.8"
+    "appium-uiautomator2-driver": "^4.2.8",
+    "appium-xcuitest-driver": "^9.10.4"
   },
   "engines": {
     "node": ">=16.0.0",

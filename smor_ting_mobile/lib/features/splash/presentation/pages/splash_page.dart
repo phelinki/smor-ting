@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/enhanced_auth_service.dart';
 import '../../../auth/presentation/providers/enhanced_auth_provider.dart';
 import '../../../auth/presentation/widgets/biometric_quick_unlock.dart';
 

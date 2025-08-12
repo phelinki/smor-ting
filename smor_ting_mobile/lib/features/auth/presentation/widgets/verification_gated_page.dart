@@ -29,7 +29,7 @@ class VerificationGatedPage extends ConsumerWidget {
         return _buildGatedContent(context, ref, user);
       },
       orElse: () => child, // If not authenticated, show child as-is
-    );
+    ) ?? child;
   }
 
   Widget _buildGatedContent(BuildContext context, WidgetRef ref, User user) {
@@ -64,9 +64,9 @@ class VerificationGatedPage extends ConsumerWidget {
         children: [
           VerificationRequiredBanner(
             emailVerified: user.isEmailVerified,
-            phoneVerified: user.isPhoneVerified,
+            phoneVerified: user.isEmailVerified, // TODO: Add proper phone verification field to User model
             onResendEmail: () => _handleResendEmail(ref, user.email),
-            onResendSms: () => _handleResendSms(ref, user.phone ?? ''),
+            onResendSms: () => _handleResendSms(ref, user.phone),
           ),
           Expanded(child: child),
         ],

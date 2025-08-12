@@ -770,4 +770,4 @@ tail -f reports/appium.log
 appium-inspector
 ```
 
-This comprehensive setup provides full QA automation capabilities for your Smor-Ting application following security, performance, and usability priorities [[memory:5639049]].
+This comprehensive setup provides full QA automation capabilities for your Smor-Ting application following security, performance, and usability priorities [[memory:5639049]]. For iOS-specific setup and test execution, see `IOS_SETUP.md` and `TEST_PLAN_IOS.md`.

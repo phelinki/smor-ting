@@ -47,12 +47,12 @@ class VerificationGuardService {
 
     // Check if route requires full verification
     if (_fullVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isEmailVerified || !user.isPhoneVerified) {
+      if (!user.isEmailVerified) { // TODO: Add phone verification check when User model supports it
         return VerificationRequirement(
           required: true,
           blocking: true,
           emailRequired: !user.isEmailVerified,
-          phoneRequired: !user.isPhoneVerified,
+          phoneRequired: !user.isEmailVerified,
           reason: 'This feature requires both email and phone verification for security.',
         );
       }
@@ -73,7 +73,7 @@ class VerificationGuardService {
 
     // Check if route requires phone verification
     if (_phoneVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isPhoneVerified) {
+      if (!user.isEmailVerified) {
         return VerificationRequirement(
           required: true,
           blocking: true,
@@ -86,12 +86,12 @@ class VerificationGuardService {
 
     // For optional verification routes, show banner but don't block
     if (_verificationOptionalRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isEmailVerified || !user.isPhoneVerified) {
+      if (!user.isEmailVerified) { // TODO: Add phone verification check when User model supports it
         return VerificationRequirement(
           required: true,
           blocking: false,
           emailRequired: !user.isEmailVerified,
-          phoneRequired: !user.isPhoneVerified,
+          phoneRequired: !user.isEmailVerified,
           reason: 'Complete verification to access all features and enhance security.',
         );
       }

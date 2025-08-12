@@ -44,6 +44,9 @@ class EnhancedAuthResult {
   final bool requiresVerification;
   final bool deviceTrusted;
   final bool isRestoredSession;
+  final bool requiresCaptcha;
+  final int? remainingAttempts;
+  final LockoutInfo? lockoutInfo;
 
   const EnhancedAuthResult({
     required this.success,
@@ -58,6 +61,9 @@ class EnhancedAuthResult {
     this.requiresVerification = false,
     this.deviceTrusted = false,
     this.isRestoredSession = false,
+    this.requiresCaptcha = false,
+    this.remainingAttempts,
+    this.lockoutInfo,
   });
 
   factory EnhancedAuthResult.fromJson(Map<String, dynamic> json) =>
@@ -80,6 +86,11 @@ class EnhancedAuthResult {
       requiresTwoFactor: response['requires_two_factor'] ?? false,
       requiresVerification: response['requires_verification'] ?? false,
       deviceTrusted: response['device_trusted'] ?? false,
+      requiresCaptcha: response['requires_captcha'] ?? false,
+      remainingAttempts: response['remaining_attempts'] as int?,
+      lockoutInfo: response['lockout_info'] != null 
+          ? LockoutInfo.fromJson(response['lockout_info'] as Map<String, dynamic>) 
+          : null,
     );
   }
 

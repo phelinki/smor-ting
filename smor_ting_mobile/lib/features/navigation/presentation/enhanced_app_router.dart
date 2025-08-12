@@ -269,6 +269,10 @@ String? _handleAuthRedirect(
       }
       return null;
       
+    case Loading():
+      // Authentication in progress - keep current route
+      return null;
+      
     case Authenticated():
       final user = authState.user;
       

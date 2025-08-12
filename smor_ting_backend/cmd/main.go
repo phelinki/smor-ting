@@ -294,7 +294,7 @@ func (a *App) initializeSecurityServices() error {
 	stubUserService := services.NewUserServiceAdapter(a.authSvc)
 	stubOTPService := services.NewStubOTPService(a.logger.Logger)
 	stubCaptchaService := services.NewStubCaptchaService(a.logger.Logger)
-	
+
 	enhancedAuthHandler := handlers.NewEnhancedAuthHandler(
 		stubEnhancedAuthService,
 		stubUserService,
