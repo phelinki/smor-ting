@@ -13,7 +13,7 @@ class ApiConfig {
     return 'http://127.0.0.1:8080';
   }
   static const String _stagingBaseUrl = 'https://api.smor-ting.com';
-  static const String _productionBaseUrl = 'https://api.smor-ting.com';
+  static const String _productionBaseUrl = 'https://smor-ting-production.up.railway.app';
   
   // Environment selection
   // - In release/TestFlight/App Store builds (kReleaseMode), use production
