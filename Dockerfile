@@ -32,3 +32,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD wget -
 CMD ["./smor-ting-api"]
 
 
+# Railway deployment trigger Wed Aug 13 00:22:46 CDT 2025
