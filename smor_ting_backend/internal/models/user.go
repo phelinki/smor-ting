@@ -23,8 +23,8 @@ type User struct {
 	Phone           string             `json:"phone" bson:"phone"`
 	Role            UserRole           `json:"role" bson:"role"`
 	IsEmailVerified bool               `json:"is_email_verified" bson:"is_email_verified"`
-    ProfileImage    string             `json:"profile_image" bson:"profile_image"`
-    Address         *Address           `json:"address,omitempty" bson:"address,omitempty"`
+	ProfileImage    string             `json:"profile_image" bson:"profile_image"`
+	Address         *Address           `json:"address,omitempty" bson:"address,omitempty"`
 	// Embedded documents for better performance
 	Bookings []Booking `json:"bookings,omitempty" bson:"bookings,omitempty"`
 	Services []Service `json:"services,omitempty" bson:"services,omitempty"`

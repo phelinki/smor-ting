@@ -50,7 +50,7 @@ func TestSecurityWorkflowRequirements(t *testing.T) {
 }
 
 // TestDockerfileExists tests that Dockerfile exists for infrastructure scanning
-func TestDockerfileExists(t *testing.T) {
+func TestDockerfileSecurityFeatures(t *testing.T) {
 	t.Run("Should have Dockerfile for infrastructure scanning", func(t *testing.T) {
 		dockerfilePath := "../Dockerfile"
 		

@@ -169,24 +169,33 @@ jobs:
     - name: 🚀 Deploy Backend Service
       id: deploy
       working-directory: ./smor_ting_backend
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       run: |
         TARGET_ENV="${{ needs.check-qa-status.outputs.target-env }}"
         echo "🚀 Deploying backend to $TARGET_ENV environment..."
         
-        # This is where you'd add your actual deployment commands
-        # Examples: Docker push, Railway deploy, fly.io deploy, etc.
+        # Install Railway CLI if not available
+        if ! command -v railway &> /dev/null; then
+          echo "📦 Installing Railway CLI..."
+          npm install -g @railway/cli
+        fi
+        
+        # Authenticate with Railway
+        echo "🔐 Authenticating with Railway..."
         
         if [ "$TARGET_ENV" = "production" ]; then
-          echo "🏭 Production deployment logic here"
-          # ./scripts/deploy_production.sh
-          echo "url=https://api.smor-ting.com" >> $GITHUB_OUTPUT
+          echo "🏭 Deploying to production..."
+          railway up --service smor-ting
+          echo "url=https://smor-ting-production.up.railway.app" >> $GITHUB_OUTPUT
         elif [ "$TARGET_ENV" = "staging" ]; then
-          echo "🧪 Staging deployment logic here"
-          # ./scripts/deploy_staging.sh
-          echo "url=https://staging-api.smor-ting.com" >> $GITHUB_OUTPUT
+          echo "🧪 Deploying to staging..."
+          railway up --service smor-ting-staging
+          echo "url=https://smor-ting-staging.up.railway.app" >> $GITHUB_OUTPUT
         else
-          echo "🔧 Development deployment logic here"
-          echo "url=https://dev-api.smor-ting.com" >> $GITHUB_OUTPUT
+          echo "🔧 Deploying to development..."
+          railway up --service smor-ting-dev
+          echo "url=https://smor-ting-dev.up.railway.app" >> $GITHUB_OUTPUT
         fi
         
         echo "✅ Backend deployment completed"

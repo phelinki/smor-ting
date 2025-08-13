@@ -260,10 +260,10 @@ func (m *Migrator) addWalletSupport(ctx context.Context) error {
 func (m *Migrator) addGeospatialIndexes(ctx context.Context) error {
 	// Users collection geospatial index
 	usersCollection := m.db.Collection("users")
-    locationIndex := mongo.IndexModel{
-        Keys: bson.M{"address": "2dsphere"},
-        Options: options.Index().SetPartialFilterExpression(bson.M{"address.type": "Point"}),
-    }
+	locationIndex := mongo.IndexModel{
+		Keys:    bson.M{"address": "2dsphere"},
+		Options: options.Index().SetPartialFilterExpression(bson.M{"address.type": "Point"}),
+	}
 	_, err := usersCollection.Indexes().CreateOne(ctx, locationIndex)
 	if err != nil {
 		m.logger.Warn("Failed to create user location index", zap.Error(err))
@@ -284,40 +284,40 @@ func (m *Migrator) addGeospatialIndexes(ctx context.Context) error {
 
 // fixGeospatialIndexes drops old address 2dsphere index and recreates with partial filter
 func (m *Migrator) fixGeospatialIndexes(ctx context.Context) error {
-    usersCollection := m.db.Collection("users")
+	usersCollection := m.db.Collection("users")
 
-    // List indexes and drop any 2dsphere on address without partial filter
-    cur, err := usersCollection.Indexes().List(ctx)
-    if err == nil {
-        defer cur.Close(ctx)
-        for cur.Next(ctx) {
-            var idx bson.M
-            if err := cur.Decode(&idx); err == nil {
-                // keys: { address: "2dsphere" }
-                if keys, ok := idx["key"].(bson.M); ok {
-                    if v, ok2 := keys["address"]; ok2 && v == "2dsphere" {
-                        if name, ok3 := idx["name"].(string); ok3 {
-                            // Drop index
-                            if _, dropErr := usersCollection.Indexes().DropOne(ctx, name); dropErr != nil {
-                                m.logger.Warn("Failed to drop existing address index", zap.Error(dropErr))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+	// List indexes and drop any 2dsphere on address without partial filter
+	cur, err := usersCollection.Indexes().List(ctx)
+	if err == nil {
+		defer cur.Close(ctx)
+		for cur.Next(ctx) {
+			var idx bson.M
+			if err := cur.Decode(&idx); err == nil {
+				// keys: { address: "2dsphere" }
+				if keys, ok := idx["key"].(bson.M); ok {
+					if v, ok2 := keys["address"]; ok2 && v == "2dsphere" {
+						if name, ok3 := idx["name"].(string); ok3 {
+							// Drop index
+							if _, dropErr := usersCollection.Indexes().DropOne(ctx, name); dropErr != nil {
+								m.logger.Warn("Failed to drop existing address index", zap.Error(dropErr))
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
-    // Recreate with partial filter
-    locationIndex := mongo.IndexModel{
-        Keys: bson.M{"address": "2dsphere"},
-        Options: options.Index().SetPartialFilterExpression(bson.M{"address.type": "Point"}),
-    }
-    if _, err := usersCollection.Indexes().CreateOne(ctx, locationIndex); err != nil {
-        m.logger.Warn("Failed to recreate user location index with partial filter", zap.Error(err))
-    }
+	// Recreate with partial filter
+	locationIndex := mongo.IndexModel{
+		Keys:    bson.M{"address": "2dsphere"},
+		Options: options.Index().SetPartialFilterExpression(bson.M{"address.type": "Point"}),
+	}
+	if _, err := usersCollection.Indexes().CreateOne(ctx, locationIndex); err != nil {
+		m.logger.Warn("Failed to recreate user location index with partial filter", zap.Error(err))
+	}
 
-    return nil
+	return nil
 }
 
 // addSyncCollections adds sync-related collections and indexes

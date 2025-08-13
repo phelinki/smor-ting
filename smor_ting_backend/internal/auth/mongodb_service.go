@@ -66,7 +66,7 @@ func (s *MongoDBService) Register(ctx context.Context, req *models.RegisterReque
 	}
 
 	// Create user
-    user := &models.User{
+	user := &models.User{
 		Email:           req.Email,
 		Password:        passwordHash,
 		FirstName:       req.FirstName,
