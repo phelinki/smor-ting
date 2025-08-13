@@ -36,10 +36,10 @@ func TestDeploymentConfiguration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Change to parent directory (backend root) if we're in tests/
 			configPath := tt.configFile
-			if _, err := os.Stat("../"+tt.configFile); err == nil {
+			if _, err := os.Stat("../" + tt.configFile); err == nil {
 				configPath = "../" + tt.configFile
 			}
-			
+
 			// Check if config file exists
 			_, err := os.Stat(configPath)
 			require.NoError(t, err, "Config file %s should exist", configPath)
@@ -70,14 +70,14 @@ func TestRailwayCliAvailable(t *testing.T) {
 		cmd := exec.Command("railway", "status")
 		cmd.Dir = ".."
 		output, err := cmd.CombinedOutput()
-		
+
 		// Note: This might fail if not authenticated, but we should get a meaningful error
 		if err != nil {
 			// Check if it's an authentication issue vs installation issue
 			outputStr := string(output)
-			if strings.Contains(outputStr, "not logged in") || 
-			   strings.Contains(outputStr, "authenticate") ||
-			   strings.Contains(outputStr, "login") {
+			if strings.Contains(outputStr, "not logged in") ||
+				strings.Contains(outputStr, "authenticate") ||
+				strings.Contains(outputStr, "login") {
 				t.Logf("Railway CLI available but not authenticated: %s", outputStr)
 			} else {
 				t.Errorf("Railway CLI error (not auth related): %s", outputStr)
@@ -104,17 +104,17 @@ func TestDeploymentScripts(t *testing.T) {
 		t.Run(script.name, func(t *testing.T) {
 			// Check if script exists (try parent directory first)
 			scriptPath := script.path
-			if _, err := os.Stat("../"+script.path); err == nil {
+			if _, err := os.Stat("../" + script.path); err == nil {
 				scriptPath = "../" + script.path
 			}
-			
+
 			_, err := os.Stat(scriptPath)
 			require.NoError(t, err, "Script %s should exist", scriptPath)
 
 			// Check if script is executable
 			info, err := os.Stat(scriptPath)
 			require.NoError(t, err)
-			
+
 			mode := info.Mode()
 			assert.True(t, mode&0111 != 0, "Script should be executable")
 		})
@@ -128,7 +128,7 @@ func TestDockerfileExists(t *testing.T) {
 	if _, err := os.Stat("../Dockerfile"); err == nil {
 		dockerfilePath = "../Dockerfile"
 	}
-	
+
 	_, err := os.Stat(dockerfilePath)
 	require.NoError(t, err, "Dockerfile should exist for containerized deployment")
 
@@ -137,7 +137,7 @@ func TestDockerfileExists(t *testing.T) {
 	require.NoError(t, err)
 
 	dockerfileStr := string(content)
-	
+
 	// Check for essential Dockerfile components
 	assert.Contains(t, dockerfileStr, "FROM", "Dockerfile should have FROM instruction")
 	assert.Contains(t, dockerfileStr, "COPY", "Dockerfile should copy application files")
@@ -148,7 +148,7 @@ func TestDockerfileExists(t *testing.T) {
 // TestGitHubActionsDeploymentWorkflow validates the deployment workflow
 func TestGitHubActionsDeploymentWorkflow(t *testing.T) {
 	workflowPath := "../../.github/workflows/deployment-gate.yml"
-	
+
 	// Check if workflow exists
 	_, err := os.Stat(workflowPath)
 	require.NoError(t, err, "Deployment workflow should exist")
@@ -190,7 +190,7 @@ func TestEnvironmentVariablesForDeployment(t *testing.T) {
 			envContent := string(content)
 
 			for _, envVar := range requiredEnvVars {
-				assert.Contains(t, envContent, envVar, 
+				assert.Contains(t, envContent, envVar,
 					"Environment file should contain %s", envVar)
 			}
 		})
@@ -211,10 +211,10 @@ func TestRailwayDeployment(t *testing.T) {
 		// First, ensure we're in the backend directory
 		cmd := exec.CommandContext(ctx, "railway", "status")
 		cmd.Dir = ".."
-		
+
 		output, err := cmd.CombinedOutput()
 		outputStr := string(output)
-		
+
 		if err != nil {
 			if strings.Contains(outputStr, "not logged in") {
 				t.Skip("Railway CLI not authenticated - skipping deployment test")
@@ -234,7 +234,7 @@ func TestRailwayDeployment(t *testing.T) {
 func TestHealthCheckEndpoint(t *testing.T) {
 	// This test should validate that /health endpoint exists in the application
 	// For now, we'll check if it's referenced in the code
-	
+
 	files := []string{
 		"../cmd/main.go",
 		"../internal/handlers/health.go",

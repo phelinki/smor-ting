@@ -229,6 +229,9 @@ class LoginPage(BasePage):
     def _find_edit_text_within_semantics(self, semantics_id: str):
         try:
             container = self.find_element_by_accessibility_id(semantics_id)
+            if self.is_ios():
+                # On iOS, the Semantics node itself is actionable
+                return container
             try:
                 return container.find_element(AppiumBy.CLASS_NAME, "android.widget.EditText")
             except Exception:
@@ -240,6 +243,12 @@ class LoginPage(BasePage):
     def _find_input_by_label_text(self, label_text_candidates: list):
         for candidate in label_text_candidates:
             try:
+                if self.is_ios():
+                    # Try locating a text field by iOS predicate
+                    return self.driver.find_element(
+                        AppiumBy.IOS_PREDICATE,
+                        f"type == 'XCUIElementTypeTextField' AND (name CONTAINS '{candidate}' OR label CONTAINS '{candidate}')"
+                    )
                 label = self.find_element_by_xpath(f"//*[contains(@text, '{candidate}')]")
                 # Assume the input follows the label in the view hierarchy
                 return label.find_element(AppiumBy.XPATH, "following::android.widget.EditText[1]")
@@ -248,51 +257,61 @@ class LoginPage(BasePage):
         return None
 
     def fill_login_form(self, email: str, password: str):
-        """Fill login form with credentials using robust strategies."""
-        # Email/username field
-        email_input = (
-            self._find_edit_text_within_semantics("login_email")
-            or self._find_input_by_label_text(["Username or Email", "Email", "Username"])  # label-based
-        )
-        if email_input is not None:
-            email_input.click()
-            try:
-                email_input.clear()
-            except Exception:
-                pass
-            email_input.send_keys(email)
-        else:
-            # Final fallback to broad XPath
-            self.enter_text((AppiumBy.XPATH, "//android.widget.EditText"), email)
-
-        # Password field
-        password_input = (
-            self._find_edit_text_within_semantics("login_password")
-            or self._find_input_by_label_text(["Password"])  # label-based
-        )
-        if password_input is not None:
-            password_input.click()
-            try:
-                password_input.clear()
-            except Exception:
-                pass
-            password_input.send_keys(password)
-        else:
-            # Final fallback: last EditText is typically password
-            try:
-                fields = self.driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.EditText")
-                if fields:
-                    fields[-1].click()
-                    try:
-                        fields[-1].clear()
-                    except Exception:
-                        pass
-                    fields[-1].send_keys(password)
+        """Fill login form with credentials using robust, platform-aware strategies."""
+        # Prefer explicit accessibility IDs first (we added Semantics labels in the app)
+        try:
+            self.enter_text(self.EMAIL_FIELD, email)
+        except Exception:
+            email_input = (
+                self._find_edit_text_within_semantics("login_email")
+                or self._find_input_by_label_text(["Username or Email", "Email", "Username"])  # label-based
+            )
+            if email_input is not None:
+                email_input.click()
+                try:
+                    email_input.clear()
+                except Exception:
+                    pass
+                email_input.send_keys(email)
+            else:
+                # Final fallback per platform
+                if self.is_ios():
+                    self.enter_text((AppiumBy.IOS_CLASS_CHAIN, "**/XCUIElementTypeTextField[1]"), email)
                 else:
-                    # As a last resort, use generic locator
-                    self.enter_text((AppiumBy.XPATH, "(//android.widget.EditText)[last()]"), password)
-            except Exception:
-                self.enter_text((AppiumBy.XPATH, "(//android.widget.EditText)[last()]"), password)
+                    self.enter_text((AppiumBy.XPATH, "//android.widget.EditText"), email)
+
+        try:
+            self.enter_text(self.PASSWORD_FIELD, password)
+        except Exception:
+            password_input = (
+                self._find_edit_text_within_semantics("login_password")
+                or self._find_input_by_label_text(["Password"])  # label-based
+            )
+            if password_input is not None:
+                password_input.click()
+                try:
+                    password_input.clear()
+                except Exception:
+                    pass
+                password_input.send_keys(password)
+            else:
+                # Final fallback per platform
+                if self.is_ios():
+                    self.enter_text((AppiumBy.IOS_CLASS_CHAIN, "**/XCUIElementTypeSecureTextField[1]"), password)
+                else:
+                    try:
+                        fields = self.driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.EditText")
+                        if fields:
+                            fields[-1].click()
+                            try:
+                                fields[-1].clear()
+                            except Exception:
+                                pass
+                            fields[-1].send_keys(password)
+                        else:
+                            self.enter_text((AppiumBy.XPATH, "(//android.widget.EditText)[last()]"), password)
+                    except Exception:
+                        self.enter_text((AppiumBy.XPATH, "(//android.widget.EditText)[last()]"), password)
     
     def tap_login_button(self):
         """Tap the login button"""
@@ -624,26 +643,37 @@ class ForgotPasswordPage(BasePage):
     """Page object for the forgot password screen"""
 
     EMAIL_FIELD = (AppiumBy.ACCESSIBILITY_ID, "forgot_email")
-    EMAIL_FALLBACK = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'email') or contains(@hint, 'Email')]")
+    EMAIL_FALLBACK_ANDROID = (AppiumBy.XPATH, "//android.widget.EditText[contains(@content-desc, 'email') or contains(@hint, 'Email')]")
+    EMAIL_FALLBACK_IOS = (AppiumBy.IOS_PREDICATE, "type == 'XCUIElementTypeTextField' AND (name CONTAINS 'email' OR label CONTAINS 'Email')")
     SUBMIT_BUTTON = (AppiumBy.ACCESSIBILITY_ID, "forgot_submit")
-    SUBMIT_FALLBACK = (AppiumBy.XPATH, "//android.widget.Button[contains(@text, 'Submit') or contains(@text, 'Continue')]")
+    SUBMIT_FALLBACK_ANDROID = (AppiumBy.XPATH, "//android.widget.Button[contains(@text, 'Submit') or contains(@text, 'Continue')]")
+    SUBMIT_FALLBACK_IOS = (AppiumBy.IOS_PREDICATE, "type == 'XCUIElementTypeButton' AND (name CONTAINS 'Submit' OR label CONTAINS 'Continue' OR label CONTAINS 'Submit')")
 
     def wait_for_loaded(self, timeout: int = 10):
         try:
             self.wait_for_element(self.EMAIL_FIELD, timeout)
         except Exception:
-            # Fallback: wait for any EditText to appear
-            self.wait_for_element((AppiumBy.CLASS_NAME, "android.widget.EditText"), timeout)
+            # Fallback: platform-aware
+            locator = self.EMAIL_FALLBACK_ANDROID if self.is_android() else self.EMAIL_FALLBACK_IOS
+            self.wait_for_element(locator, timeout)
 
     def fill_email(self, email: str):
-        # Prefer the explicit email locator, otherwise use the first EditText on the page
+        # Prefer the explicit email locator, otherwise use platform-aware fallback
         try:
-            locator = self.choose_locator(self.EMAIL_FIELD, self.EMAIL_FALLBACK)
+            locator = self.choose_locator(
+                self.EMAIL_FIELD,
+                self.EMAIL_FALLBACK_ANDROID,
+                self.EMAIL_FALLBACK_IOS,
+            )
             self.enter_text(locator, email)
             return
         except Exception:
             pass
-        fields = self.driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.EditText")
+        # Last resort per platform
+        if self.is_android():
+            fields = self.driver.find_elements(AppiumBy.CLASS_NAME, "android.widget.EditText")
+        else:
+            fields = self.driver.find_elements(AppiumBy.IOS_CLASS_CHAIN, "**/XCUIElementTypeTextField")
         if fields:
             fields[0].click()
             try:
@@ -655,5 +685,9 @@ class ForgotPasswordPage(BasePage):
             raise NoSuchElementException("No input field found on Forgot Password page")
 
     def submit(self):
-        locator = self.choose_locator(self.SUBMIT_BUTTON, self.SUBMIT_FALLBACK)
+        locator = self.choose_locator(
+            self.SUBMIT_BUTTON,
+            self.SUBMIT_FALLBACK_ANDROID,
+            self.SUBMIT_FALLBACK_IOS,
+        )
         self.tap(locator)

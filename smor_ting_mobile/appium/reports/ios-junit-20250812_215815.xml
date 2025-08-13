@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="4" failures="1" skipped="6" tests="12" time="2870.359" timestamp="2025-08-12T21:58:15.436489" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_visibility_when_available" time="221.791"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:149: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_enable_biometric_authentication" time="229.454"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:158: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_disable_biometric_authentication" time="226.398"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:188: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_button_visibility" time="72.558"><skipped type="pytest.skip" message="Biometric unlock not available - either not supported or not enabled">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:224: Biometric unlock not available - either not supported or not enabled</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_flow" time="79.875"><skipped type="pytest.skip" message="Biometric unlock not available">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:233: Biometric unlock not available</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_with_no_enrolled_biometrics" time="80.900" /><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_persistence" time="226.379"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:288: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_forgot_password" name="test_forgot_password_flow" time="110.144"><failure message="selenium.common.exceptions.TimeoutException: Message: &#10;Stacktrace:&#10;NoSuchElementError: An element could not be located on the page using the given search parameters.&#10;    at XCUITestDriver.doNativeFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)&#10;    at processTicksAndRejections (node:internal/process/task_queues:105:5)&#10;    at XCUITestDriver.findNativeElementOrElements (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)&#10;    at XCUITestDriver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)&#10;    at XCUITestDriver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)&#10;    at XCUITestDriver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)">tests/auth/test_forgot_password.py:18: in test_forgot_password_flow
+    forgot.submit()
+tests/common/page_objects/auth_pages.py:674: in submit
+    self.tap(locator)
+tests/common/page_objects/base_page.py:103: in tap
+    element = self.wait_for_element_clickable(locator, timeout)
+tests/common/page_objects/base_page.py:83: in wait_for_element_clickable
+    return wait.until(EC.element_to_be_clickable(locator))
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at XCUITestDriver.doNativeFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at XCUITestDriver.findNativeElementOrElements (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+E       at XCUITestDriver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+E       at XCUITestDriver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at XCUITestDriver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)</failure></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="371.882"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="371.999"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="369.259"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="370.895"><error message="failed on setup with &quot;AssertionError: Failed to navigate to login page&quot;">tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:101: in _navigate_to_login
+    self.login_page.assert_element_present(
+tests/common/page_objects/base_page.py:192: in assert_element_present
+    assert self.is_element_present(locator), message or f"Element not present: {locator}"
+E   AssertionError: Failed to navigate to login page</error></testcase></testsuite></testsuites>

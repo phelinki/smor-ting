@@ -13,6 +13,7 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
+from appium.options.ios import XCUITestOptions
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -97,7 +98,11 @@ class BaseTest:
             capabilities = self.config.get_capabilities()
             self.logger.info(f"Creating driver with capabilities: {capabilities}")
 
-            options = UiAutomator2Options()
+            # Choose platform-specific driver options
+            if self.config.platform_name.lower() == "ios":
+                options = XCUITestOptions()
+            else:
+                options = UiAutomator2Options()
             options.load_capabilities(capabilities)
 
             driver = webdriver.Remote(

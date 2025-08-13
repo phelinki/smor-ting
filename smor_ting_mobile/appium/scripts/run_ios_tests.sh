@@ -192,7 +192,11 @@ sleep 2
 
 # Start Appium server in background
 print_info "Starting Appium server on port 4723..."
-appium server --port 4723 --log reports/appium.log --log-level info &
+if command -v appium &> /dev/null; then
+    appium server --port 4723 --log reports/appium.log --log-level info &
+else
+    npx --yes appium server --port 4723 --log reports/appium.log --log-level info &
+fi
 APPIUM_PID=$!
 
 # Wait for Appium to start
@@ -259,14 +263,14 @@ case $TEST_SUITE in
         ;;
 esac
 
-# Run pytest with comprehensive reporting
+# Run pytest with comprehensive reporting (use python -m to avoid PATH issues)
 print_info "Executing test suite: $TEST_SUITE"
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 REPORT_NAME="ios-report-${TIMESTAMP}.html"
 JUNIT_NAME="ios-junit-${TIMESTAMP}.xml"
 
-pytest $PYTEST_ARGS \
+python3 -m pytest $PYTEST_ARGS \
     -v \
     --platform=ios \
     --environment="$ENVIRONMENT" \

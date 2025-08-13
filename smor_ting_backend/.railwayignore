@@ -38,3 +38,10 @@ scripts/
 # Keys (should be set as environment variables)
 keys/
 *.env
+
+# Mobile app files (not needed for backend deployment)
+../smor_ting_mobile/
+**/appium/
+**/reports/
+*.html
+*.xml

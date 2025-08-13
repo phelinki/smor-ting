@@ -120,8 +120,11 @@ class _BiometricSettingsWidgetState extends ConsumerState<BiometricSettingsWidge
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
+            Semantics(
+              label: 'biometric_auth_row',
+              container: true,
+              child: Row(
+                children: [
                 Icon(
                   Icons.fingerprint,
                   color: AppTheme.secondaryBlue,
@@ -144,12 +147,17 @@ class _BiometricSettingsWidgetState extends ConsumerState<BiometricSettingsWidge
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else
-                  Switch(
-                    value: _biometricEnabled,
-                    onChanged: _toggleBiometric,
-                    activeColor: AppTheme.secondaryBlue,
+                  Semantics(
+                    label: 'biometric_auth_switch',
+                    toggled: _biometricEnabled,
+                    child: Switch(
+                      value: _biometricEnabled,
+                      onChanged: _toggleBiometric,
+                      activeColor: AppTheme.secondaryBlue,
+                    ),
                   ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             Text(

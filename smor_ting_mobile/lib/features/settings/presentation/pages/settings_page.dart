@@ -108,7 +108,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             const SizedBox(height: 16),
 
             // Privacy & Security Section
-            _SettingsSection(
+            Semantics(
+              label: 'privacy_security_section',
+              container: true,
+              child: _SettingsSection(
               title: 'Privacy & Security',
               children: [
                 _SettingsSwitchTile(
@@ -154,6 +157,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   },
                 ),
               ],
+            ),
             ),
 
             const SizedBox(height: 16),

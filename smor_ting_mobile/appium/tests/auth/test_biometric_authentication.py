@@ -22,13 +22,18 @@ from ..common.page_objects.base_page import BasePage
 class SettingsPage(BasePage):
     """Page object for the settings screen"""
     
-    # Settings navigation
-    SETTINGS_TITLE = (AppiumBy.XPATH, "//*[contains(@text, 'Settings')]")
+    # Settings navigation (platform-aware)
+    SETTINGS_TITLE = (AppiumBy.XPATH, "//*[contains(@text, 'Settings') or contains(@name, 'Settings') or contains(@label, 'Settings')]")
     
-    # Privacy & Security section
-    PRIVACY_SECURITY_SECTION = (AppiumBy.XPATH, "//*[contains(@text, 'Privacy & Security')]")
-    BIOMETRIC_AUTH_TOGGLE = (AppiumBy.XPATH, "//*[contains(@text, 'Biometric Authentication')]")
-    BIOMETRIC_AUTH_SWITCH = (AppiumBy.XPATH, "//*[contains(@text, 'Biometric Authentication')]/following-sibling::*//android.widget.Switch")
+    # Privacy & Security section (platform-aware)
+    PRIVACY_SECURITY_SECTION_ANDROID = (AppiumBy.XPATH, "//*[contains(@text, 'Privacy & Security')]")
+    PRIVACY_SECURITY_SECTION_IOS = (AppiumBy.ACCESSIBILITY_ID, "privacy_security_section")
+    
+    BIOMETRIC_AUTH_TOGGLE_ANDROID = (AppiumBy.XPATH, "//*[contains(@text, 'Biometric Authentication')]")
+    BIOMETRIC_AUTH_TOGGLE_IOS = (AppiumBy.ACCESSIBILITY_ID, "biometric_auth_row")
+    
+    BIOMETRIC_AUTH_SWITCH_ANDROID = (AppiumBy.XPATH, "//*[contains(@text, 'Biometric Authentication')]/following-sibling::*//android.widget.Switch")
+    BIOMETRIC_AUTH_SWITCH_IOS = (AppiumBy.ACCESSIBILITY_ID, "biometric_auth_switch")
     
     # Success/error messages
     SUCCESS_MESSAGE = (AppiumBy.XPATH, "//*[contains(@text, 'successfully')]")
@@ -36,27 +41,50 @@ class SettingsPage(BasePage):
     
     def navigate_to_biometric_settings(self):
         """Navigate to the biometric authentication settings"""
-        # Scroll to Privacy & Security section
-        self.scroll_to_element(self.PRIVACY_SECURITY_SECTION)
-        
-        # Look for biometric authentication toggle
-        return self.is_element_present(self.BIOMETRIC_AUTH_TOGGLE)
+        section_locator = self.choose_locator(
+            self.PRIVACY_SECURITY_SECTION_ANDROID,
+            self.PRIVACY_SECURITY_SECTION_IOS,
+        )
+        toggle_locator = self.choose_locator(
+            self.BIOMETRIC_AUTH_TOGGLE_ANDROID,
+            self.BIOMETRIC_AUTH_TOGGLE_IOS,
+        )
+        try:
+            self.scroll_to_element(section_locator)
+        except Exception:
+            return False
+        return self.is_element_present(toggle_locator)
     
     def is_biometric_toggle_visible(self):
         """Check if biometric authentication toggle is visible"""
-        return self.is_element_present(self.BIOMETRIC_AUTH_TOGGLE)
+        toggle_locator = self.choose_locator(
+            self.BIOMETRIC_AUTH_TOGGLE_ANDROID,
+            self.BIOMETRIC_AUTH_TOGGLE_IOS,
+        )
+        return self.is_element_present(toggle_locator)
     
     def is_biometric_enabled(self):
         """Check if biometric authentication is currently enabled"""
         try:
-            switch_element = self.driver.find_element(*self.BIOMETRIC_AUTH_SWITCH)
+            switch_locator = self.choose_locator(
+                self.BIOMETRIC_AUTH_SWITCH_ANDROID,
+                self.BIOMETRIC_AUTH_SWITCH_IOS,
+            )
+            switch_element = self.driver.find_element(*switch_locator)
+            # iOS uses 'value' attribute ('1' or '0'), Android uses 'checked' == 'true'
+            if self.is_ios():
+                return str(switch_element.get_attribute('value')).lower() in ('1', 'true')
             return switch_element.get_attribute("checked") == "true"
-        except NoSuchElementException:
+        except Exception:
             return False
     
     def toggle_biometric_auth(self):
         """Toggle the biometric authentication setting"""
-        switch_element = self.wait_for_element(self.BIOMETRIC_AUTH_SWITCH)
+        switch_locator = self.choose_locator(
+            self.BIOMETRIC_AUTH_SWITCH_ANDROID,
+            self.BIOMETRIC_AUTH_SWITCH_IOS,
+        )
+        switch_element = self.wait_for_element(switch_locator)
         switch_element.click()
         time.sleep(2)  # Wait for toggle animation
     
