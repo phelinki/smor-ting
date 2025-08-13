@@ -65,7 +65,7 @@ class ApiService {
   // Enhanced authentication endpoints
   Future<Map<String, dynamic>> enhancedLogin(EnhancedLoginRequest request) async {
     try {
-      final response = await _dio.post('/auth/enhanced-login', data: request.toJson());
+      final response = await _dio.post('/auth/login', data: request.toJson());
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
