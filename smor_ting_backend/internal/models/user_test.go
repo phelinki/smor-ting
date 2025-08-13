@@ -127,3 +127,20 @@ func TestAuthResponse_JSON(t *testing.T) {
 		assert.False(t, authResponse.RequiresOTP)
 	})
 }
+
+// New test to ensure empty address is omitted (omitempty) and registration can work without address
+func TestUser_AddressOmittedWhenEmpty(t *testing.T) {
+    user := User{
+        ID:        primitive.NewObjectID(),
+        Email:     "noaddress@example.com",
+        FirstName: "No",
+        LastName:  "Address",
+        Phone:     "",
+        Role:      CustomerRole,
+    }
+
+    data, err := json.Marshal(user)
+    require.NoError(t, err)
+    // Address key should not be present when nil and omitempty is set
+    assert.NotContains(t, string(data), "\"address\":")
+}

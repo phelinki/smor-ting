@@ -66,7 +66,7 @@ func (s *MongoDBService) Register(ctx context.Context, req *models.RegisterReque
 	}
 
 	// Create user
-	user := &models.User{
+    user := &models.User{
 		Email:           req.Email,
 		Password:        passwordHash,
 		FirstName:       req.FirstName,
@@ -75,14 +75,6 @@ func (s *MongoDBService) Register(ctx context.Context, req *models.RegisterReque
 		Role:            req.Role,
 		IsEmailVerified: false,
 		ProfileImage:    "",
-		Address: models.Address{
-			Street:    "",
-			City:      "",
-			County:    "",
-			Country:   "",
-			Latitude:  0,
-			Longitude: 0,
-		},
 	}
 
 	if err := s.repository.CreateUser(ctx, user); err != nil {
