@@ -73,39 +73,66 @@ class TestLogin(BaseTest):
         return user_data
     
     def _navigate_to_login(self):
-        """Navigate to login page"""
+        """
+        Tightened navigation helper that forces Landing → Login sequence.
+        This ensures proper navigation flow for QA automation.
+        """
         try:
-            # Wait for splash if present
+            # Step 1: Wait for splash if present
             self.splash_page.wait_for_splash_to_complete()
 
-            # Use robust helper that can navigate via landing/registration
-            self.login_page.ensure_on_login(timeout=10)
-
-            # If still not present, try landing → login explicitly
-            if not self.login_page.is_element_present(self.login_page.LOGIN_BUTTON, timeout=3):
+            # Step 2: Force Landing → Login sequence (no shortcuts)
+            # Ensure we're on landing page first
+            max_attempts = 3
+            for attempt in range(max_attempts):
                 try:
+                    # Look for landing page sign-in button
                     landing = PageFactory.get_landing_page(self.driver)
-                    landing.goto_login()
+                    sign_in_button_locator = landing.choose_locator(
+                        landing.SIGN_IN_BUTTON, 
+                        landing.SIGN_IN_FALLBACK
+                    )
+                    
+                    sign_in_button = self.wait_for_element_to_be_clickable(
+                        sign_in_button_locator, timeout=5
+                    )
+                    break
                 except Exception:
-                    pass
-
-            # As a final fallback, try registration → login link
-            if not self.login_page.is_element_present(self.login_page.LOGIN_BUTTON, timeout=3):
-                if self.registration_page.is_element_present(self.registration_page.LOGIN_LINK, timeout=3):
-                    self.registration_page.tap_login_link()
+                    if attempt == max_attempts - 1:
+                        raise Exception("Failed to find landing page after multiple attempts")
+                    time.sleep(2)
+            
+            # Step 3: Verify landing page is properly loaded before proceeding
+            if not sign_in_button.is_displayed() or not sign_in_button.is_enabled():
+                raise Exception("Landing page sign-in button not properly accessible")
+            
+            # Step 4: Navigate from Landing to Login (explicit sequence)
+            sign_in_button.click()
+            
+            # Step 5: Verify navigation to login page completed
+            login_submit_locator = self.login_page.choose_locator(
+                self.login_page.LOGIN_BUTTON,
+                self.login_page.LOGIN_BUTTON_FALLBACK
+            )
+            
+            login_submit_button = self.wait_for_element(login_submit_locator, timeout=10)
+            
+            if not login_submit_button.is_displayed():
+                raise Exception("Navigation to login page failed - login submit button not visible")
 
         except Exception as e:
-            self.logger.warning(f"Navigation to login page: {e}")
+            self.logger.error(f"Tightened navigation to login page failed: {e}")
+            raise
 
-        # Verify we're on login page
+        # Step 6: Final verification that we're on the correct page
         self.login_page.assert_element_present(
-            self.login_page.choose_locator(self.login_page.LOGIN_BUTTON, self.login_page.LOGIN_BUTTON_FALLBACK),
-            "Failed to navigate to login page"
+            login_submit_locator,
+            "Failed to complete Landing → Login navigation sequence"
         )
 
-        # Capture login page screenshot
+        # Capture login page screenshot for verification
         try:
-            self.take_screenshot("login_page")
+            self.take_screenshot("login_page_after_tightened_navigation")
         except Exception as e:
             self.logger.warning(f"Failed to capture login page screenshot: {e}")
     

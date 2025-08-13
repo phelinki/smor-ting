@@ -339,9 +339,8 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 const SizedBox(height: 32),
                 
                 // Username Field
-                Semantics(
-                  label: 'login_email',
-                  child: CustomTextField(
+                CustomTextField(
+                  key: const ValueKey('login_email'),
                   controller: _usernameController,
                   labelText: 'Username or Email',
                   hintText: 'Enter your username or email',
@@ -357,14 +356,12 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                   ),
                   validator: _validateUsername,
                 ),
-                ),
                 
                 const SizedBox(height: 20),
                 
                 // Password Field
-                Semantics(
-                  label: 'login_password',
-                  child: CustomTextField(
+                CustomTextField(
+                  key: const ValueKey('login_password'),
                   controller: _passwordController,
                   labelText: 'Password',
                   hintText: 'Enter your password',
@@ -382,7 +379,6 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                     },
                   ),
                   validator: _validatePassword,
-                ),
                 ),
                 
                 const SizedBox(height: 16),
@@ -424,10 +420,8 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 // Sign In Button
                 SizedBox(
                   width: double.infinity,
-                  child: Semantics(
-                    label: 'login_submit',
-                    button: true,
-                    child: ElevatedButton(
+                  child: ElevatedButton(
+                    key: const ValueKey('login_submit'),
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryRed,
@@ -453,7 +447,6 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                    ),
                   ),
                 ),
                 
