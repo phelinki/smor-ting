@@ -2,8 +2,8 @@ package tests
 
 import (
 	"context"
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/smorting/backend/configs"
 	"github.com/smorting/backend/internal/auth"
@@ -29,8 +29,8 @@ func setupAuthService(t *testing.T) *auth.MongoDBService {
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	require.NoError(t, err, "Should connect to MongoDB")
 
-	// Use production database
-	db := client.Database("smorting_prod")
+	// Use production database (same name as shown in Atlas)
+	db := client.Database("smor_ting")
 
 	// Create logger
 	logger, err := logger.New("info", "json", "stdout")
@@ -96,7 +96,7 @@ func TestCreateQATestUsers(t *testing.T) {
 			require.NoError(t, err, "Should create test user without error")
 			require.NotNil(t, response, "Should return auth response")
 			require.NotEmpty(t, response.AccessToken, "Should return access token")
-			
+
 			assert.Equal(t, testUser.Email, response.User.Email, "Should have correct email")
 			assert.Equal(t, testUser.FirstName, response.User.FirstName, "Should have correct first name")
 			assert.Equal(t, testUser.LastName, response.User.LastName, "Should have correct last name")
@@ -153,7 +153,7 @@ func TestQATestUsersDataIntegrity(t *testing.T) {
 		}
 		response, err := authService.Login(ctx, loginReq)
 		require.NoError(t, err, "QA customer should exist and login")
-		
+
 		user := response.User
 		assert.Equal(t, models.CustomerRole, user.Role, "Should have customer role")
 		assert.Equal(t, "QA", user.FirstName, "Should have correct first name")
@@ -170,7 +170,7 @@ func TestQATestUsersDataIntegrity(t *testing.T) {
 		}
 		response, err := authService.Login(ctx, loginReq)
 		require.NoError(t, err, "QA provider should exist and login")
-		
+
 		user := response.User
 		assert.Equal(t, models.ProviderRole, user.Role, "Should have provider role")
 		assert.Equal(t, "QA", user.FirstName, "Should have correct first name")
@@ -185,7 +185,7 @@ func TestQATestUsersDataIntegrity(t *testing.T) {
 		}
 		response, err := authService.Login(ctx, loginReq)
 		require.NoError(t, err, "QA admin should exist and login")
-		
+
 		user := response.User
 		assert.Equal(t, models.AdminRole, user.Role, "Should have admin role")
 		assert.Equal(t, "QA", user.FirstName, "Should have correct first name")
