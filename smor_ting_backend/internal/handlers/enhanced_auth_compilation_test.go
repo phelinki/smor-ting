@@ -50,10 +50,9 @@ func TestEnhancedAuthService_InterfaceCompliance(t *testing.T) {
 	// This test ensures that our enhanced auth service interface has all required methods
 	// The interface should be implemented by any concrete service
 
-	var service EnhancedAuthService
-
-	// These method signatures must exist for the handler to compile
-	assert.NotNil(t, service) // interface can be nil, but type must exist
+	// Ensure the interface type compiles and exists. We don't require a non-nil value.
+	var _ EnhancedAuthService
+	assert.True(t, true)
 
 	// Test that the interface methods are properly defined by checking the interface
 	// This will fail to compile if the methods don't exist with correct signatures

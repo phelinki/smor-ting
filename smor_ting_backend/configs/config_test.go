@@ -71,6 +71,8 @@ func TestLoadConfig_SucceedsInProduction_WithValidBase64Secrets(t *testing.T) {
 		"JWT_REFRESH_SECRET":     base64.StdEncoding.EncodeToString(refresh),
 		"ENCRYPTION_KEY":         base64.StdEncoding.EncodeToString(enc),
 		"PAYMENT_ENCRYPTION_KEY": base64.StdEncoding.EncodeToString(pay),
+		// MongoDB production requirements
+		"MONGODB_URI": "mongodb+srv://user:pass@cluster.mongodb.net/db?retryWrites=true&w=majority",
 		// minimal MoMo production requirements
 		"MOMO_BASE_URL":           "https://example.com",
 		"MOMO_API_USER":           "user",
@@ -139,6 +141,8 @@ func TestLoadConfig_SucceedsInStaging_WithValidBase64Secrets(t *testing.T) {
 		"JWT_REFRESH_SECRET":     base64.StdEncoding.EncodeToString(refresh),
 		"ENCRYPTION_KEY":         base64.StdEncoding.EncodeToString(enc),
 		"PAYMENT_ENCRYPTION_KEY": base64.StdEncoding.EncodeToString(pay),
+		// MongoDB staging requirements
+		"MONGODB_URI": "mongodb+srv://user:pass@staging.mongodb.net/db?retryWrites=true&w=majority",
 		// minimal MoMo staging requirements
 		"MOMO_BASE_URL":           "https://staging.example.com",
 		"MOMO_API_USER":           "user",

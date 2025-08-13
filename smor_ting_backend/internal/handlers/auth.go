@@ -152,6 +152,23 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		})
 	}
 
+	// Validate request fields
+	if req.Email == "" {
+		h.logger.Warn("Login validation failed", zap.String("error", "email is required"))
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Validation failed",
+			"message": "email is required",
+		})
+	}
+
+	if req.Password == "" {
+		h.logger.Warn("Login validation failed", zap.String("error", "password is required"))
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Validation failed",
+			"message": "password is required",
+		})
+	}
+
 	// Authenticate against MongoDB-backed service
 	user, err := h.authService.Authenticate(c.Context(), req.Email, req.Password)
 	if err != nil {

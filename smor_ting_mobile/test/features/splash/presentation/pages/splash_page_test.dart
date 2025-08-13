@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../lib/features/splash/presentation/pages/splash_page.dart';
 import '../../../../../lib/features/auth/presentation/providers/enhanced_auth_provider.dart';
 import '../../../../../lib/core/services/enhanced_auth_service.dart';
 import '../../../../../lib/core/models/user.dart';
+import '../../../../../lib/core/models/enhanced_auth_models.dart';
 
-import 'splash_page_test.mocks.dart';
-
-@GenerateMocks([EnhancedAuthService, GoRouter])
+class MockEnhancedAuthService extends Mock implements EnhancedAuthService {}
+class MockGoRouter extends Mock implements GoRouter {}
 void main() {
   group('SplashPage', () {
     late MockEnhancedAuthService mockAuthService;
@@ -37,15 +36,16 @@ void main() {
       return ProviderScope(
         parent: container,
         child: MaterialApp.router(
-          routerConfig: mockRouter,
-          home: const SplashPage(),
+          routerConfig: GoRouter(routes: [
+            GoRoute(path: '/', builder: (context, state) => const SplashPage()),
+          ]),
         ),
       );
     }
 
     testWidgets('should show app logo and loading indicator', (tester) async {
       // Arrange
-      when(mockAuthService.restoreSession()).thenAnswer((_) async => null);
+      when(() => mockAuthService.restoreSession()).thenAnswer((_) async => null);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -65,7 +65,7 @@ void main() {
         phone: '+1234567890',
         role: UserRole.customer,
         isEmailVerified: true,
-        isPhoneVerified: true,
+        
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -78,9 +78,9 @@ void main() {
         deviceTrusted: true,
       );
 
-      when(mockAuthService.restoreSession()).thenAnswer((_) async => mockAuthResult);
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.restoreSession()).thenAnswer((_) async => mockAuthResult);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -101,7 +101,7 @@ void main() {
         phone: '+1234567890',
         role: UserRole.customer,
         isEmailVerified: true,
-        isPhoneVerified: true,
+        
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -114,27 +114,27 @@ void main() {
         deviceTrusted: true,
       );
 
-      when(mockAuthService.restoreSession()).thenAnswer((_) async => mockAuthResult);
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => false);
+      when(() => mockAuthService.restoreSession()).thenAnswer((_) async => mockAuthResult);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => false);
 
       // Act
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
       // Assert
-      verify(mockRouter.go('/home')).called(1);
+      verify(() => mockRouter.go('/home')).called(1);
     });
 
     testWidgets('should navigate to login when no session exists', (tester) async {
       // Arrange
-      when(mockAuthService.restoreSession()).thenAnswer((_) async => null);
+      when(() => mockAuthService.restoreSession()).thenAnswer((_) async => null);
 
       // Act
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
       // Assert
-      verify(mockRouter.go('/landing')).called(1);
+      verify(() => mockRouter.go('/landing')).called(1);
     });
 
     testWidgets('should handle biometric authentication success', (tester) async {
@@ -147,7 +147,7 @@ void main() {
         phone: '+1234567890',
         role: UserRole.customer,
         isEmailVerified: true,
-        isPhoneVerified: true,
+        
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -160,10 +160,10 @@ void main() {
         deviceTrusted: true,
       );
 
-      when(mockAuthService.restoreSession()).thenAnswer((_) async => mockAuthResult);
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
-      when(mockAuthService.authenticateWithBiometrics('test@example.com')).thenAnswer((_) async => mockAuthResult);
+      when(() => mockAuthService.restoreSession()).thenAnswer((_) async => mockAuthResult);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.authenticateWithBiometrics('test@example.com')).thenAnswer((_) async => mockAuthResult);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -173,7 +173,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      verify(mockRouter.go('/home')).called(1);
+      verify(() => mockRouter.go('/home')).called(1);
     });
   });
 }

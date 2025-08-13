@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../lib/features/auth/presentation/widgets/biometric_quick_unlock.dart';
-import '../../../../../lib/features/auth/presentation/providers/biometric_auth_provider.dart';
 import '../../../../../lib/core/services/enhanced_auth_service.dart';
+import '../../../../../lib/core/models/enhanced_auth_models.dart';
 import '../../../../../lib/core/models/user.dart';
 
-import 'biometric_quick_unlock_test.mocks.dart';
-
-@GenerateMocks([EnhancedAuthService, GoRouter])
+class MockEnhancedAuthService extends Mock implements EnhancedAuthService {}
+class MockGoRouter extends Mock implements GoRouter {}
 void main() {
   group('BiometricQuickUnlock', () {
     late MockEnhancedAuthService mockAuthService;
@@ -50,8 +48,8 @@ void main() {
 
     testWidgets('should show biometric unlock button when available and enabled', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -65,7 +63,7 @@ void main() {
 
     testWidgets('should not show biometric unlock when not available', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => false);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => false);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -78,8 +76,8 @@ void main() {
 
     testWidgets('should not show biometric unlock when not enabled for user', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => false);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => false);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -91,8 +89,8 @@ void main() {
 
     testWidgets('should trigger biometric authentication when unlock button is tapped', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
       
       final mockUser = User(
         id: '1',
@@ -102,7 +100,6 @@ void main() {
         phone: '+1234567890',
         role: UserRole.customer,
         isEmailVerified: true,
-        isPhoneVerified: true,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -115,7 +112,7 @@ void main() {
         deviceTrusted: true,
       );
       
-      when(mockAuthService.authenticateWithBiometrics('test@example.com'))
+      when(() => mockAuthService.authenticateWithBiometrics('test@example.com'))
           .thenAnswer((_) async => mockResult);
 
       // Act
@@ -126,21 +123,21 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      verify(mockAuthService.authenticateWithBiometrics('test@example.com')).called(1);
-      verify(mockRouter.go('/home')).called(1);
+      verify(() => mockAuthService.authenticateWithBiometrics('test@example.com')).called(1);
+      verify(() => mockRouter.go('/home')).called(1);
     });
 
     testWidgets('should show error message when biometric authentication fails', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
       
-      final mockResult = EnhancedAuthResult(
+      const mockResult = EnhancedAuthResult(
         success: false,
         message: 'Biometric authentication failed',
       );
       
-      when(mockAuthService.authenticateWithBiometrics('test@example.com'))
+      when(() => mockAuthService.authenticateWithBiometrics('test@example.com'))
           .thenAnswer((_) async => mockResult);
 
       // Act
@@ -157,11 +154,11 @@ void main() {
 
     testWidgets('should show loading state during authentication', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
       
-      when(mockAuthService.authenticateWithBiometrics('test@example.com'))
-          .thenAnswer((_) => Future.delayed(const Duration(seconds: 1), () => EnhancedAuthResult(success: false)));
+      when(() => mockAuthService.authenticateWithBiometrics('test@example.com'))
+          .thenAnswer((_) => Future.delayed(const Duration(seconds: 1), () => const EnhancedAuthResult(success: false)));
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -176,8 +173,8 @@ void main() {
 
     testWidgets('should show alternative login option', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -189,8 +186,8 @@ void main() {
 
     testWidgets('should navigate to login when "Use Password Instead" is tapped', (tester) async {
       // Arrange
-      when(mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
-      when(mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
+      when(() => mockAuthService.canUseBiometrics()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isBiometricEnabled('test@example.com')).thenAnswer((_) async => true);
 
       // Act
       await tester.pumpWidget(createWidget());
@@ -200,7 +197,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      verify(mockRouter.go('/login')).called(1);
+      verify(() => mockRouter.go('/login')).called(1);
     });
   });
 }

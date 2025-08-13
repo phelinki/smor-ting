@@ -14,11 +14,13 @@ import (
 
 // EnhancedAuthHandler provides comprehensive authentication endpoints
 type EnhancedAuthHandler struct {
-	authService    EnhancedAuthService
-	userService    UserService
-	otpService     OTPService
-	captchaService CaptchaService
-	logger         *zap.Logger
+	authService         EnhancedAuthService
+	userService         UserService
+	otpService          OTPService
+	captchaService      CaptchaService
+	bruteForceProtector *services.BruteForceProtector
+	auditService        *services.AuditService
+	logger              *zap.Logger
 }
 
 // EnhancedAuthService interface for enhanced authentication operations
@@ -61,14 +63,25 @@ func NewEnhancedAuthHandler(
 	userService UserService,
 	otpService OTPService,
 	captchaService CaptchaService,
+	auditService *services.AuditService,
 	logger *zap.Logger,
 ) *EnhancedAuthHandler {
+	// Fallbacks for nil dependencies to keep tests simple
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+	if auditService == nil {
+		auditService = services.NewAuditService(nil, logger)
+	}
+
 	return &EnhancedAuthHandler{
-		authService:    authService,
-		userService:    userService,
-		otpService:     otpService,
-		captchaService: captchaService,
-		logger:         logger,
+		authService:         authService,
+		userService:         userService,
+		otpService:          otpService,
+		captchaService:      captchaService,
+		bruteForceProtector: services.NewBruteForceProtector(logger),
+		auditService:        auditService,
+		logger:              logger,
 	}
 }
 
@@ -77,20 +90,20 @@ func NewEnhancedAuthHandler(
 
 // Enhanced login response structure
 type EnhancedLoginResponse struct {
-	Success              bool                `json:"success"`
-	Message              string              `json:"message"`
-	User                 *models.User        `json:"user,omitempty"`
-	AccessToken          string              `json:"access_token,omitempty"`
-	RefreshToken         string              `json:"refresh_token,omitempty"`
-	SessionID            string              `json:"session_id,omitempty"`
-	TokenExpiresAt       time.Time           `json:"token_expires_at,omitempty"`
-	RefreshExpiresAt     time.Time           `json:"refresh_expires_at,omitempty"`
-	RequiresTwoFactor    bool                `json:"requires_two_factor"`
-	RequiresVerification bool                `json:"requires_verification"`
-	RequiresCaptcha      bool                `json:"requires_captcha"`
-	DeviceTrusted        bool                `json:"device_trusted"`
-	LockoutInfo          *models.LockoutInfo `json:"lockout_info,omitempty"`
-	RemainingAttempts    int                 `json:"remaining_attempts,omitempty"`
+	Success              bool                  `json:"success"`
+	Message              string                `json:"message"`
+	User                 *models.User          `json:"user,omitempty"`
+	AccessToken          string                `json:"access_token,omitempty"`
+	RefreshToken         string                `json:"refresh_token,omitempty"`
+	SessionID            string                `json:"session_id,omitempty"`
+	TokenExpiresAt       time.Time             `json:"token_expires_at,omitempty"`
+	RefreshExpiresAt     time.Time             `json:"refresh_expires_at,omitempty"`
+	RequiresTwoFactor    bool                  `json:"requires_two_factor"`
+	RequiresVerification bool                  `json:"requires_verification"`
+	RequiresCaptcha      bool                  `json:"requires_captcha"`
+	DeviceTrusted        bool                  `json:"device_trusted"`
+	LockoutInfo          *services.LockoutInfo `json:"lockout_info,omitempty"`
+	RemainingAttempts    int                   `json:"remaining_attempts,omitempty"`
 }
 
 // EnhancedLogin handles comprehensive login with all security features
@@ -120,8 +133,21 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	// Set client info in device fingerprint
 	req.DeviceInfo.Platform = h.extractPlatform(userAgent)
 
-	// Check if CAPTCHA is required (stub implementation)
-	requiresCaptcha := false // TODO: Implement proper brute force protection
+	// Check brute force protection
+	if err := h.bruteForceProtector.CheckAllowed(req.Email, clientIP); err != nil {
+		h.logger.Warn("Login blocked by brute force protection",
+			zap.String("email", req.Email),
+			zap.String("ip", clientIP),
+			zap.Error(err),
+		)
+		return c.Status(http.StatusTooManyRequests).JSON(EnhancedLoginResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
+
+	// Check if CAPTCHA is required
+	requiresCaptcha := h.bruteForceProtector.RequiresCaptcha(req.Email, clientIP)
 
 	if requiresCaptcha && req.CaptchaToken == "" {
 		return c.Status(http.StatusTooManyRequests).JSON(EnhancedLoginResponse{
@@ -156,11 +182,32 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 		)
 
 		// Record failure for brute force protection
+		h.bruteForceProtector.RecordFailure(req.Email, clientIP)
+
+		// Log failed login attempt for audit
+		h.auditService.LogSecurityEvent(
+			c.Context(),
+			services.ActionLogin,
+			req.Email,
+			clientIP,
+			userAgent,
+			map[string]interface{}{
+				"reason": "user_not_found",
+				"email":  req.Email,
+			},
+		)
+
+		// Get lockout info and remaining attempts
+		lockoutInfo := h.bruteForceProtector.GetLockoutInfo(req.Email, clientIP)
+		remainingAttempts := h.bruteForceProtector.GetRemainingAttempts(req.Email, clientIP)
 
 		// Return generic error message to prevent email enumeration
 		return c.Status(http.StatusUnauthorized).JSON(EnhancedLoginResponse{
-			Success: false,
-			Message: "Invalid email or password",
+			Success:           false,
+			Message:           "Invalid email or password",
+			LockoutInfo:       lockoutInfo,
+			RemainingAttempts: remainingAttempts,
+			RequiresCaptcha:   h.bruteForceProtector.RequiresCaptcha(req.Email, clientIP),
 		})
 	}
 
@@ -171,10 +218,33 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 			zap.String("ip", clientIP),
 		)
 
-		// Record failure for brute force protection (TODO: implement)
+		// Record failure for brute force protection
+		h.bruteForceProtector.RecordFailure(req.Email, clientIP)
+
+		// Log failed login attempt for audit
+		h.auditService.LogUserAction(
+			c.Context(),
+			user,
+			services.ActionLogin,
+			"authentication",
+			clientIP,
+			userAgent,
+			false,
+			map[string]interface{}{
+				"reason": "invalid_password",
+			},
+		)
+
+		// Get lockout info and remaining attempts
+		lockoutInfo := h.bruteForceProtector.GetLockoutInfo(req.Email, clientIP)
+		remainingAttempts := h.bruteForceProtector.GetRemainingAttempts(req.Email, clientIP)
+
 		return c.Status(http.StatusUnauthorized).JSON(EnhancedLoginResponse{
-			Success: false,
-			Message: "Invalid email or password",
+			Success:           false,
+			Message:           "Invalid email or password",
+			LockoutInfo:       lockoutInfo,
+			RemainingAttempts: remainingAttempts,
+			RequiresCaptcha:   h.bruteForceProtector.RequiresCaptcha(req.Email, clientIP),
 		})
 	}
 
@@ -189,16 +259,42 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	}
 
 	if !authResult.Success {
+		// Record failure for enhanced auth service failure
+		h.bruteForceProtector.RecordFailure(req.Email, clientIP)
+
+		// Get lockout info and remaining attempts
+		lockoutInfo := h.bruteForceProtector.GetLockoutInfo(req.Email, clientIP)
+		remainingAttempts := h.bruteForceProtector.GetRemainingAttempts(req.Email, clientIP)
+
 		return c.Status(http.StatusUnauthorized).JSON(EnhancedLoginResponse{
 			Success:              authResult.Success,
 			Message:              authResult.Message,
 			RequiresTwoFactor:    authResult.RequiresTwoFactor,
 			RequiresVerification: authResult.RequiresVerification,
-			RequiresCaptcha:      authResult.RequiresCaptcha,
+			RequiresCaptcha:      h.bruteForceProtector.RequiresCaptcha(req.Email, clientIP),
 			DeviceTrusted:        authResult.DeviceTrusted,
-			LockoutInfo:          authResult.LockoutInfo,
+			LockoutInfo:          lockoutInfo,
+			RemainingAttempts:    remainingAttempts,
 		})
 	}
+
+	// Success - record successful authentication and reset brute force counters
+	h.bruteForceProtector.RecordSuccess(req.Email, clientIP)
+
+	// Log successful login for audit
+	h.auditService.LogUserAction(
+		c.Context(),
+		authResult.User,
+		services.ActionLogin,
+		"authentication",
+		clientIP,
+		userAgent,
+		true,
+		map[string]interface{}{
+			"session_id":     authResult.SessionID,
+			"device_trusted": authResult.DeviceTrusted,
+		},
+	)
 
 	// Success - return successful login response
 	return c.Status(http.StatusOK).JSON(EnhancedLoginResponse{

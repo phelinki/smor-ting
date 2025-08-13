@@ -7,13 +7,13 @@ class ApiConfig {
   static String get _devBaseUrl {
     if (Platform.isAndroid) {
       // Android emulator loopback
-      return 'http://10.0.2.2:8080/api/v1';
+      return 'http://10.0.2.2:8080';
     }
     // iOS simulator / desktop
-    return 'http://127.0.0.1:8080/api/v1';
+    return 'http://127.0.0.1:8080';
   }
-  static const String _stagingBaseUrl = 'https://api.smor-ting.com/api/v1';
-  static const String _productionBaseUrl = 'https://api.smor-ting.com/api/v1';
+  static const String _stagingBaseUrl = 'https://api.smor-ting.com';
+  static const String _productionBaseUrl = 'https://api.smor-ting.com';
   
   // Environment selection
   // - In release/TestFlight/App Store builds (kReleaseMode), use production
@@ -31,6 +31,8 @@ class ApiConfig {
         return _productionBaseUrl;
     }
   }
+  
+  static String get apiBaseUrl => '$baseUrl/api/v1';
   
   static String get environmentName {
     switch (_currentEnvironment) {

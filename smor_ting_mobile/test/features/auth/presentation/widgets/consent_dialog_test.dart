@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:smor_ting/core/models/consent.dart';
-import 'package:smor_ting/core/services/consent_service.dart';
-import 'package:smor_ting/features/auth/presentation/widgets/consent_dialog.dart';
+import 'package:mocktail/mocktail.dart';
+import '../../../../../lib/core/models/consent.dart';
+import '../../../../../lib/core/services/consent_service.dart';
+import '../../../../../lib/features/auth/presentation/widgets/consent_dialog.dart';
 
-import 'consent_dialog_test.mocks.dart';
-
-@GenerateMocks([ConsentService])
+class MockConsentService extends Mock implements ConsentService {}
 void main() {
   late MockConsentService mockConsentService;
 
@@ -205,11 +202,11 @@ void main() {
         ),
       ];
 
-      when(mockConsentService.updateMultipleConsents(
-        any,
-        any,
-        userAgent: anyNamed('userAgent'),
-        metadata: anyNamed('metadata'),
+      when(() => mockConsentService.updateMultipleConsents(
+        any(),
+        any(),
+        userAgent: any(named: 'userAgent'),
+        metadata: any(named: 'metadata'),
       )).thenAnswer((_) async {});
 
       // Act
@@ -227,11 +224,11 @@ void main() {
       await tester.pump();
 
       // Assert
-      verify(mockConsentService.updateMultipleConsents(
+      verify(() => mockConsentService.updateMultipleConsents(
         'test_user',
         {ConsentType.termsOfService: true},
         userAgent: 'Smor-Ting Mobile App',
-        metadata: anyNamed('metadata'),
+        metadata: any(named: 'metadata'),
       )).called(1);
     });
 
@@ -248,11 +245,11 @@ void main() {
       ];
 
       // Make the API call hang to test loading state
-      when(mockConsentService.updateMultipleConsents(
-        any,
-        any,
-        userAgent: anyNamed('userAgent'),
-        metadata: anyNamed('metadata'),
+      when(() => mockConsentService.updateMultipleConsents(
+        any(),
+        any(),
+        userAgent: any(named: 'userAgent'),
+        metadata: any(named: 'metadata'),
       )).thenAnswer((_) => Future.delayed(const Duration(seconds: 10)));
 
       // Act
@@ -286,11 +283,11 @@ void main() {
         ),
       ];
 
-      when(mockConsentService.updateMultipleConsents(
-        any,
-        any,
-        userAgent: anyNamed('userAgent'),
-        metadata: anyNamed('metadata'),
+      when(() => mockConsentService.updateMultipleConsents(
+        any(),
+        any(),
+        userAgent: any(named: 'userAgent'),
+        metadata: any(named: 'metadata'),
       )).thenThrow(Exception('Network error'));
 
       // Act

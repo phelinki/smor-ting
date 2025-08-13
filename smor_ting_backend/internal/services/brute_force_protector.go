@@ -312,16 +312,25 @@ func (bp *BruteForceProtector) GetRemainingAttempts(email, ipAddress string) int
 	defer bp.mu.RUnlock()
 
 	config := DefaultBruteForceConfig()
+	now := time.Now()
 	minRemaining := config.MaxAttempts
 
+	// Check email lockout first
 	if tracker, exists := bp.emailAttempts[email]; exists {
+		if now.Before(tracker.LockedUntil) {
+			return 0 // Currently locked out
+		}
 		emailRemaining := config.MaxAttempts - tracker.FailedAttempts
 		if emailRemaining < minRemaining {
 			minRemaining = emailRemaining
 		}
 	}
 
+	// Check IP lockout
 	if tracker, exists := bp.ipAttempts[ipAddress]; exists {
+		if now.Before(tracker.LockedUntil) {
+			return 0 // Currently locked out
+		}
 		ipRemaining := config.MaxAttempts - tracker.FailedAttempts
 		if ipRemaining < minRemaining {
 			minRemaining = ipRemaining

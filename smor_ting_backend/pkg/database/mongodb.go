@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/smorting/backend/configs"
+	"github.com/smorting/backend/internal/models"
 	"github.com/smorting/backend/pkg/logger"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -255,4 +257,143 @@ func (m *MongoDB) HealthCheck() error {
 // IsInMemory returns false for MongoDB (always persistent)
 func (m *MongoDB) IsInMemory() bool {
 	return false
+}
+
+// Device session operations (placeholder implementations for now)
+func (m *MongoDB) CreateDeviceSession(ctx context.Context, session *models.DeviceSession) error {
+	// TODO: Implement MongoDB device session creation
+	return nil
+}
+
+func (m *MongoDB) GetDeviceSession(ctx context.Context, sessionID string) (*models.DeviceSession, error) {
+	// TODO: Implement MongoDB device session retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) GetDeviceSessionByRefreshToken(ctx context.Context, refreshToken string) (*models.DeviceSession, error) {
+	// TODO: Implement MongoDB device session retrieval by refresh token
+	return nil, nil
+}
+
+func (m *MongoDB) GetDeviceSessionByDeviceID(ctx context.Context, deviceID string) (*models.DeviceSession, error) {
+	// TODO: Implement MongoDB device session retrieval by device ID
+	return nil, nil
+}
+
+func (m *MongoDB) GetUserDeviceSessions(ctx context.Context, userID string) ([]models.DeviceSession, error) {
+	// TODO: Implement MongoDB user device sessions retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) UpdateDeviceSessionActivity(ctx context.Context, sessionID string) error {
+	// TODO: Implement MongoDB device session activity update
+	return nil
+}
+
+func (m *MongoDB) RevokeDeviceSession(ctx context.Context, sessionID string) error {
+	// TODO: Implement MongoDB device session revocation
+	return nil
+}
+
+func (m *MongoDB) RevokeAllUserTokens(ctx context.Context, userID string) error {
+	// TODO: Implement MongoDB user token revocation
+	return nil
+}
+
+func (m *MongoDB) RotateRefreshToken(ctx context.Context, sessionID string, newRefreshToken string) error {
+	// TODO: Implement MongoDB refresh token rotation
+	return nil
+}
+
+func (m *MongoDB) CleanupExpiredSessions(ctx context.Context, maxAge time.Duration) error {
+	// TODO: Implement MongoDB expired session cleanup
+	return nil
+}
+
+// Security event operations (placeholder implementations for now)
+func (m *MongoDB) LogSecurityEvent(ctx context.Context, event *models.SecurityEvent) error {
+	// TODO: Implement MongoDB security event logging
+	return nil
+}
+
+func (m *MongoDB) GetUserSecurityEvents(ctx context.Context, userID string, limit int) ([]models.SecurityEvent, error) {
+	// TODO: Implement MongoDB user security events retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) GetSecurityEventsByType(ctx context.Context, userID string, eventType models.SecurityEventType, limit int) ([]models.SecurityEvent, error) {
+	// TODO: Implement MongoDB security events retrieval by type
+	return nil, nil
+}
+
+// Sync operations (placeholder implementations for now)
+func (m *MongoDB) UpdateSyncStatus(ctx context.Context, status *models.SyncStatus) error {
+	// TODO: Implement MongoDB sync status update
+	return nil
+}
+
+func (m *MongoDB) CreateSyncCheckpoint(ctx context.Context, checkpoint *models.SyncCheckpoint) error {
+	// TODO: Implement MongoDB sync checkpoint creation
+	return nil
+}
+
+func (m *MongoDB) GetSyncCheckpoint(ctx context.Context, userID primitive.ObjectID) (*models.SyncCheckpoint, error) {
+	// TODO: Implement MongoDB sync checkpoint retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) UpdateSyncCheckpoint(ctx context.Context, checkpoint *models.SyncCheckpoint) error {
+	// TODO: Implement MongoDB sync checkpoint update
+	return nil
+}
+
+func (m *MongoDB) CreateSyncMetrics(ctx context.Context, metrics *models.SyncMetrics) error {
+	// TODO: Implement MongoDB sync metrics creation
+	return nil
+}
+
+func (m *MongoDB) GetRecentSyncMetrics(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncMetrics, error) {
+	// TODO: Implement MongoDB sync metrics retrieval
+	return nil, nil
+}
+
+// Background sync queue operations (placeholder implementations for now)
+func (m *MongoDB) CreateSyncQueueItem(ctx context.Context, item *models.SyncQueueItem) error {
+	// TODO: Implement MongoDB sync queue item creation
+	return nil
+}
+
+func (m *MongoDB) GetSyncQueueItem(ctx context.Context, itemID primitive.ObjectID) (*models.SyncQueueItem, error) {
+	// TODO: Implement MongoDB sync queue item retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) UpdateSyncQueueItem(ctx context.Context, item *models.SyncQueueItem) error {
+	// TODO: Implement MongoDB sync queue item update
+	return nil
+}
+
+func (m *MongoDB) GetPendingSyncQueueItems(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncQueueItem, error) {
+	// TODO: Implement MongoDB pending sync queue items retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) GetConflictQueueItems(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncQueueItem, error) {
+	// TODO: Implement MongoDB conflict queue items retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) CleanupCompletedQueueItems(ctx context.Context, olderThan time.Duration) (int64, error) {
+	// TODO: Implement MongoDB completed queue items cleanup
+	return 0, nil
+}
+
+func (m *MongoDB) GetBackgroundSyncStatus(ctx context.Context, userID primitive.ObjectID) (*models.BackgroundSyncStatus, error) {
+	// TODO: Implement MongoDB background sync status retrieval
+	return nil, nil
+}
+
+func (m *MongoDB) UpdateBackgroundSyncStatus(ctx context.Context, status *models.BackgroundSyncStatus) error {
+	// TODO: Implement MongoDB background sync status update
+	return nil
 }

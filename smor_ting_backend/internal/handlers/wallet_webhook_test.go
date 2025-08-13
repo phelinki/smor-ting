@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,7 @@ func TestMomoWebhook_Topup_UpdatesBalances(t *testing.T) {
 	// Setup repo and user
 	repo := database.NewMemoryDatabase()
 	user := &models.User{Email: "webhook@example.com", Wallet: models.Wallet{Currency: "LRD"}}
-	if err := repo.CreateUser(nil, user); err != nil {
+	if err := repo.CreateUser(context.TODO(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 	svc := services.NewWalletLedgerService(repo)
@@ -48,7 +49,7 @@ func TestMomoWebhook_Topup_UpdatesBalances(t *testing.T) {
 	}
 
 	// Compute balances
-	bal, err := svc.ComputeBalances(nil, user.ID)
+	bal, err := svc.ComputeBalances(context.TODO(), user.ID)
 	if err != nil {
 		t.Fatalf("balances: %v", err)
 	}
@@ -60,7 +61,7 @@ func TestMomoWebhook_Topup_UpdatesBalances(t *testing.T) {
 func TestMomoWebhook_EscrowHoldAndRelease(t *testing.T) {
 	repo := database.NewMemoryDatabase()
 	user := &models.User{Email: "escrow@example.com", Wallet: models.Wallet{Currency: "LRD"}}
-	_ = repo.CreateUser(nil, user)
+	_ = repo.CreateUser(context.TODO(), user)
 	svc := services.NewWalletLedgerService(repo)
 	lg, _ := logger.New("debug", "console", "stdout")
 	wh := handlers.NewWalletWebhookHandlerWithLedger(lg, svc)
@@ -75,7 +76,7 @@ func TestMomoWebhook_EscrowHoldAndRelease(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	_, _ = app.Test(req)
 
-	bal, _ := svc.ComputeBalances(nil, user.ID)
+	bal, _ := svc.ComputeBalances(context.TODO(), user.ID)
 	if bal.Available != 0 || bal.PendingHeld != 200 || bal.Total != 200 {
 		t.Fatalf("after hold unexpected balances: %+v", bal)
 	}
@@ -87,7 +88,7 @@ func TestMomoWebhook_EscrowHoldAndRelease(t *testing.T) {
 	req2.Header.Set("Content-Type", "application/json")
 	_, _ = app.Test(req2)
 
-	bal2, _ := svc.ComputeBalances(nil, user.ID)
+	bal2, _ := svc.ComputeBalances(context.TODO(), user.ID)
 	if bal2.Available != 200 || bal2.PendingHeld != 0 || bal2.Total != 200 {
 		t.Fatalf("after release unexpected balances: %+v", bal2)
 	}

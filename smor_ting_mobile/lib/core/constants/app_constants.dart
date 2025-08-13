@@ -5,9 +5,8 @@ class AppConstants {
   static const String appDescription = 'Handyman and Service Marketplace for Liberia';
   
   // API Configuration
-  static const String baseUrl = 'http://localhost:8080';
-  static const String apiVersion = '/api/v1';
-  static const String apiBaseUrl = '$baseUrl$apiVersion';
+  // Note: API configuration has been moved to ApiConfig class in api_config.dart
+  // Use ApiConfig.baseUrl and ApiConfig.apiBaseUrl instead
   
   // Liberia-specific settings
   static const String defaultCountry = 'Liberia';

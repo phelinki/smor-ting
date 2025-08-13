@@ -219,7 +219,7 @@ func TestMongoPipelineConstruction(t *testing.T) {
 		// This test verifies that the pipeline construction uses keyed fields
 		// which should fix the Go vet error
 		pipeline := mongo.Pipeline{
-			{primitive.E{Key: "$match", Value: bson.M{
+			{bson.E{Key: "$match", Value: bson.M{
 				"operationType": bson.M{
 					"$in": []string{"insert", "update", "delete", "replace"},
 				},
@@ -233,10 +233,9 @@ func TestMongoPipelineConstruction(t *testing.T) {
 		assert.NotNil(t, stage)
 		assert.Len(t, stage, 1)
 
-		// Verify the stage structure
-		for key, value := range stage {
-			assert.Equal(t, "$match", key)
-			assert.NotNil(t, value)
-		}
+		// Verify the stage structure - get the first element
+		elem := stage[0]
+		assert.Equal(t, "$match", elem.Key)
+		assert.NotNil(t, elem.Value)
 	})
 }

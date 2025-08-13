@@ -46,7 +46,7 @@ func NewChangeStreamService(db *mongo.Database, logger *logger.Logger) *ChangeSt
 func (cs *ChangeStreamService) StartChangeStream() error {
 	// Watch all collections for changes
 	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.M{
+		{bson.E{Key: "$match", Value: bson.M{
 			"operationType": bson.M{
 				"$in": []string{"insert", "update", "delete", "replace"},
 			},

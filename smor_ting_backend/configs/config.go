@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -122,7 +123,7 @@ func LoadConfig() (*Config, error) {
 			AtlasCluster:     getBoolEnv("MONGODB_ATLAS", false),
 		},
 		Auth: AuthConfig{
-			JWTSecret:        getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+			JWTSecret:        getEnv("JWT_SECRET", ""),
 			JWTExpiration:    getDurationEnv("JWT_EXPIRATION", 24*time.Hour),
 			BCryptCost:       getIntEnv("BCRYPT_COST", 12),
 			JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", "your-32-byte-access-secret-key-change-in-production"),
@@ -179,11 +180,14 @@ func (c *Config) validate() error {
 	}
 
 	// Security validation for JWT secrets
-	if c.Auth.JWTSecret == "" {
-		return fmt.Errorf("JWT secret is required")
-	}
-	if err := c.validateSecretSecurity("JWT_SECRET", c.Auth.JWTSecret); err != nil {
-		return err
+	// Allow legacy JWT_SECRET to be optional when access/refresh secrets are provided
+	if c.Auth.JWTAccessSecret == "" || c.Auth.JWTRefreshSecret == "" {
+		if c.Auth.JWTSecret == "" {
+			return fmt.Errorf("JWT secret is required")
+		}
+		if err := c.validateSecretSecurity("JWT_SECRET", c.Auth.JWTSecret); err != nil {
+			return err
+		}
 	}
 
 	if c.Auth.JWTAccessSecret == "" {
@@ -192,12 +196,22 @@ func (c *Config) validate() error {
 	if err := c.validateSecretSecurity("JWT_ACCESS_SECRET", c.Auth.JWTAccessSecret); err != nil {
 		return err
 	}
+	if c.IsProduction() || c.IsStaging() {
+		if err := c.validateBase64Key("JWT_ACCESS_SECRET", c.Auth.JWTAccessSecret); err != nil {
+			return err
+		}
+	}
 
 	if c.Auth.JWTRefreshSecret == "" {
 		return fmt.Errorf("JWT refresh secret is required")
 	}
 	if err := c.validateSecretSecurity("JWT_REFRESH_SECRET", c.Auth.JWTRefreshSecret); err != nil {
 		return err
+	}
+	if c.IsProduction() || c.IsStaging() {
+		if err := c.validateBase64Key("JWT_REFRESH_SECRET", c.Auth.JWTRefreshSecret); err != nil {
+			return err
+		}
 	}
 
 	if c.Security.EncryptionKey == "" {
@@ -206,12 +220,22 @@ func (c *Config) validate() error {
 	if err := c.validateSecretSecurity("ENCRYPTION_KEY", c.Security.EncryptionKey); err != nil {
 		return err
 	}
+	if c.IsProduction() || c.IsStaging() {
+		if err := c.validateBase64Key("ENCRYPTION_KEY", c.Security.EncryptionKey); err != nil {
+			return err
+		}
+	}
 
 	if c.Security.PaymentEncryptionKey == "" {
 		return fmt.Errorf("payment encryption key is required")
 	}
 	if err := c.validateSecretSecurity("PAYMENT_ENCRYPTION_KEY", c.Security.PaymentEncryptionKey); err != nil {
 		return err
+	}
+	if c.IsProduction() || c.IsStaging() {
+		if err := c.validateBase64Key("PAYMENT_ENCRYPTION_KEY", c.Security.PaymentEncryptionKey); err != nil {
+			return err
+		}
 	}
 
 	// Database security validation
@@ -286,6 +310,18 @@ func (c *Config) validateSecretSecurity(name, value string) error {
 		}
 	}
 
+	return nil
+}
+
+// validateBase64Key ensures the provided value is base64-encoded 32 bytes
+func (c *Config) validateBase64Key(name, value string) error {
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return fmt.Errorf("%s must be base64-encoded: %w", name, err)
+	}
+	if len(decoded) != 32 {
+		return fmt.Errorf("%s must decode to 32 bytes", name)
+	}
 	return nil
 }
 

@@ -16,7 +16,7 @@ class ApiService {
 
   ApiService({String? baseUrl, bool? enableLogging}) : _loggingEnabled = enableLogging ?? !kReleaseMode {
     _dio = Dio(BaseOptions(
-      baseUrl: baseUrl ?? ApiConfig.baseUrl,
+      baseUrl: baseUrl ?? ApiConfig.apiBaseUrl,
       connectTimeout: Duration(seconds: ApiConfig.connectTimeoutSeconds),
       receiveTimeout: Duration(seconds: ApiConfig.receiveTimeoutSeconds),
       headers: {

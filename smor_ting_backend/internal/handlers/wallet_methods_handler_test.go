@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,7 @@ func TestWalletMethods_LinkListDelete(t *testing.T) {
 
 	// Seed user
 	u := &models.User{Email: "msisdn@example.com"}
-	_ = repo.CreateUser(nil, u)
+	_ = repo.CreateUser(context.TODO(), u)
 
 	app := fiber.New()
 	app.Post("/wallet/methods", func(c *fiber.Ctx) error {

@@ -130,7 +130,7 @@ void main() {
           // Assert
           expect(result.isAllowed, false, reason: 'Customer should not access $route');
           expect(result.redirectRoute, '/home');
-          expect(result.denialReason, 'Insufficient role permissions');
+          expect(result.denialReason, 'Insufficient permissions for this route');
         }
       });
 
@@ -198,7 +198,7 @@ void main() {
           // Assert
           expect(result.isAllowed, false, reason: 'Provider should not access $route');
           expect(result.redirectRoute, '/agent-dashboard');
-          expect(result.denialReason, 'Insufficient role permissions');
+          expect(result.denialReason, 'Insufficient permissions for this route');
         }
       });
 

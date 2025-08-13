@@ -548,6 +548,521 @@ func (r *MongoDBRepository) SetupIndexes(ctx context.Context) error {
 	return nil
 }
 
+// Device session operations
+func (r *MongoDBRepository) CreateDeviceSession(ctx context.Context, session *models.DeviceSession) error {
+	collection := r.db.Collection("device_sessions")
+
+	if session.ID.IsZero() {
+		session.ID = primitive.NewObjectID()
+	}
+	if session.CreatedAt.IsZero() {
+		session.CreatedAt = time.Now()
+	}
+	session.LastActivity = time.Now()
+
+	_, err := collection.InsertOne(ctx, session)
+	if err != nil {
+		return fmt.Errorf("failed to create device session: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) GetDeviceSession(ctx context.Context, sessionID string) (*models.DeviceSession, error) {
+	collection := r.db.Collection("device_sessions")
+
+	objectID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid session ID: %w", err)
+	}
+
+	var session models.DeviceSession
+	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&session)
+	if err != nil {
+		return nil, fmt.Errorf("device session not found: %w", err)
+	}
+	return &session, nil
+}
+
+func (r *MongoDBRepository) GetDeviceSessionByRefreshToken(ctx context.Context, refreshToken string) (*models.DeviceSession, error) {
+	collection := r.db.Collection("device_sessions")
+
+	var session models.DeviceSession
+	err := collection.FindOne(ctx, bson.M{
+		"refresh_token": refreshToken,
+		"is_active":     true,
+	}).Decode(&session)
+	if err != nil {
+		return nil, fmt.Errorf("device session not found for refresh token: %w", err)
+	}
+	return &session, nil
+}
+
+func (r *MongoDBRepository) GetDeviceSessionByDeviceID(ctx context.Context, deviceID string) (*models.DeviceSession, error) {
+	collection := r.db.Collection("device_sessions")
+
+	var session models.DeviceSession
+	err := collection.FindOne(ctx, bson.M{
+		"device_id": deviceID,
+		"is_active": true,
+	}).Decode(&session)
+	if err != nil {
+		return nil, fmt.Errorf("device session not found for device ID: %w", err)
+	}
+	return &session, nil
+}
+
+func (r *MongoDBRepository) GetUserDeviceSessions(ctx context.Context, userID string) ([]models.DeviceSession, error) {
+	collection := r.db.Collection("device_sessions")
+
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	cursor, err := collection.Find(ctx, bson.M{"user_id": userObjectID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to find user device sessions: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var sessions []models.DeviceSession
+	if err = cursor.All(ctx, &sessions); err != nil {
+		return nil, fmt.Errorf("failed to decode device sessions: %w", err)
+	}
+	return sessions, nil
+}
+
+func (r *MongoDBRepository) UpdateDeviceSessionActivity(ctx context.Context, sessionID string) error {
+	collection := r.db.Collection("device_sessions")
+
+	objectID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		return fmt.Errorf("invalid session ID: %w", err)
+	}
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.M{"_id": objectID},
+		bson.M{"$set": bson.M{"last_activity": time.Now()}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update device session activity: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) RevokeDeviceSession(ctx context.Context, sessionID string) error {
+	collection := r.db.Collection("device_sessions")
+
+	objectID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		return fmt.Errorf("invalid session ID: %w", err)
+	}
+
+	now := time.Now()
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.M{"_id": objectID},
+		bson.M{"$set": bson.M{
+			"is_active":  false,
+			"revoked_at": now,
+		}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to revoke device session: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) RevokeAllUserTokens(ctx context.Context, userID string) error {
+	collection := r.db.Collection("device_sessions")
+
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	now := time.Now()
+	_, err = collection.UpdateMany(
+		ctx,
+		bson.M{
+			"user_id":   userObjectID,
+			"is_active": true,
+		},
+		bson.M{"$set": bson.M{
+			"is_active":  false,
+			"revoked_at": now,
+		}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to revoke all user tokens: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) RotateRefreshToken(ctx context.Context, sessionID string, newRefreshToken string) error {
+	collection := r.db.Collection("device_sessions")
+
+	objectID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		return fmt.Errorf("invalid session ID: %w", err)
+	}
+
+	_, err = collection.UpdateOne(
+		ctx,
+		bson.M{"_id": objectID},
+		bson.M{"$set": bson.M{
+			"refresh_token": newRefreshToken,
+			"last_activity": time.Now(),
+		}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to rotate refresh token: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) CleanupExpiredSessions(ctx context.Context, maxAge time.Duration) error {
+	collection := r.db.Collection("device_sessions")
+
+	expiredTime := time.Now().Add(-maxAge)
+	_, err := collection.UpdateMany(
+		ctx,
+		bson.M{
+			"last_activity": bson.M{"$lt": expiredTime},
+			"is_active":     true,
+		},
+		bson.M{"$set": bson.M{
+			"is_active":  false,
+			"revoked_at": time.Now(),
+		}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to cleanup expired sessions: %w", err)
+	}
+	return nil
+}
+
+// Security event operations
+func (r *MongoDBRepository) LogSecurityEvent(ctx context.Context, event *models.SecurityEvent) error {
+	collection := r.db.Collection("security_events")
+
+	if event.ID.IsZero() {
+		event.ID = primitive.NewObjectID()
+	}
+	if event.Timestamp.IsZero() {
+		event.Timestamp = time.Now()
+	}
+
+	_, err := collection.InsertOne(ctx, event)
+	if err != nil {
+		return fmt.Errorf("failed to log security event: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) GetUserSecurityEvents(ctx context.Context, userID string, limit int) ([]models.SecurityEvent, error) {
+	collection := r.db.Collection("security_events")
+
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	cursor, err := collection.Find(ctx,
+		bson.M{"user_id": userObjectID},
+		options.Find().SetLimit(int64(limit)).SetSort(bson.M{"timestamp": -1}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find user security events: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var events []models.SecurityEvent
+	if err = cursor.All(ctx, &events); err != nil {
+		return nil, fmt.Errorf("failed to decode security events: %w", err)
+	}
+	return events, nil
+}
+
+func (r *MongoDBRepository) GetSecurityEventsByType(ctx context.Context, userID string, eventType models.SecurityEventType, limit int) ([]models.SecurityEvent, error) {
+	collection := r.db.Collection("security_events")
+
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	cursor, err := collection.Find(ctx,
+		bson.M{
+			"user_id":    userObjectID,
+			"event_type": eventType,
+		},
+		options.Find().SetLimit(int64(limit)).SetSort(bson.M{"timestamp": -1}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find security events by type: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var events []models.SecurityEvent
+	if err = cursor.All(ctx, &events); err != nil {
+		return nil, fmt.Errorf("failed to decode security events: %w", err)
+	}
+	return events, nil
+}
+
+// Sync status operations
+func (r *MongoDBRepository) UpdateSyncStatus(ctx context.Context, status *models.SyncStatus) error {
+	collection := r.db.Collection("sync_statuses")
+
+	status.UpdatedAt = time.Now()
+	_, err := collection.ReplaceOne(
+		ctx,
+		bson.M{"user_id": status.UserID},
+		status,
+		options.Replace().SetUpsert(true),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update sync status: %w", err)
+	}
+	return nil
+}
+
+// Sync checkpoint operations
+func (r *MongoDBRepository) CreateSyncCheckpoint(ctx context.Context, checkpoint *models.SyncCheckpoint) error {
+	collection := r.db.Collection("sync_checkpoints")
+
+	if checkpoint.ID.IsZero() {
+		checkpoint.ID = primitive.NewObjectID()
+	}
+	if checkpoint.CreatedAt.IsZero() {
+		checkpoint.CreatedAt = time.Now()
+	}
+	checkpoint.UpdatedAt = time.Now()
+
+	_, err := collection.InsertOne(ctx, checkpoint)
+	if err != nil {
+		return fmt.Errorf("failed to create sync checkpoint: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) GetSyncCheckpoint(ctx context.Context, userID primitive.ObjectID) (*models.SyncCheckpoint, error) {
+	collection := r.db.Collection("sync_checkpoints")
+
+	var checkpoint models.SyncCheckpoint
+	err := collection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&checkpoint)
+	if err != nil {
+		return nil, fmt.Errorf("sync checkpoint not found: %w", err)
+	}
+	return &checkpoint, nil
+}
+
+func (r *MongoDBRepository) UpdateSyncCheckpoint(ctx context.Context, checkpoint *models.SyncCheckpoint) error {
+	collection := r.db.Collection("sync_checkpoints")
+
+	checkpoint.UpdatedAt = time.Now()
+	_, err := collection.ReplaceOne(
+		ctx,
+		bson.M{"user_id": checkpoint.UserID},
+		checkpoint,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update sync checkpoint: %w", err)
+	}
+	return nil
+}
+
+// Sync metrics operations
+func (r *MongoDBRepository) CreateSyncMetrics(ctx context.Context, metrics *models.SyncMetrics) error {
+	collection := r.db.Collection("sync_metrics")
+
+	if metrics.ID.IsZero() {
+		metrics.ID = primitive.NewObjectID()
+	}
+	if metrics.CreatedAt.IsZero() {
+		metrics.CreatedAt = time.Now()
+	}
+
+	_, err := collection.InsertOne(ctx, metrics)
+	if err != nil {
+		return fmt.Errorf("failed to create sync metrics: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) GetRecentSyncMetrics(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncMetrics, error) {
+	collection := r.db.Collection("sync_metrics")
+
+	cursor, err := collection.Find(ctx,
+		bson.M{"user_id": userID},
+		options.Find().SetLimit(int64(limit)).SetSort(bson.M{"created_at": -1}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find sync metrics: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var metrics []models.SyncMetrics
+	if err = cursor.All(ctx, &metrics); err != nil {
+		return nil, fmt.Errorf("failed to decode sync metrics: %w", err)
+	}
+	return metrics, nil
+}
+
+// Background sync queue operations
+func (r *MongoDBRepository) CreateSyncQueueItem(ctx context.Context, item *models.SyncQueueItem) error {
+	collection := r.db.Collection("sync_queue")
+
+	if item.ID.IsZero() {
+		item.ID = primitive.NewObjectID()
+	}
+	if item.CreatedAt.IsZero() {
+		item.CreatedAt = time.Now()
+	}
+	item.UpdatedAt = time.Now()
+
+	_, err := collection.InsertOne(ctx, item)
+	if err != nil {
+		return fmt.Errorf("failed to create sync queue item: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) GetSyncQueueItem(ctx context.Context, itemID primitive.ObjectID) (*models.SyncQueueItem, error) {
+	collection := r.db.Collection("sync_queue")
+
+	var item models.SyncQueueItem
+	err := collection.FindOne(ctx, bson.M{"_id": itemID}).Decode(&item)
+	if err != nil {
+		return nil, fmt.Errorf("sync queue item not found: %w", err)
+	}
+	return &item, nil
+}
+
+func (r *MongoDBRepository) UpdateSyncQueueItem(ctx context.Context, item *models.SyncQueueItem) error {
+	collection := r.db.Collection("sync_queue")
+
+	item.UpdatedAt = time.Now()
+	_, err := collection.ReplaceOne(ctx, bson.M{"_id": item.ID}, item)
+	if err != nil {
+		return fmt.Errorf("failed to update sync queue item: %w", err)
+	}
+	return nil
+}
+
+func (r *MongoDBRepository) GetPendingSyncQueueItems(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncQueueItem, error) {
+	collection := r.db.Collection("sync_queue")
+
+	cursor, err := collection.Find(ctx,
+		bson.M{
+			"user_id": userID,
+			"status":  models.SyncQueuePending,
+		},
+		options.Find().
+			SetSort(bson.M{"priority": -1, "created_at": 1}).
+			SetLimit(int64(limit)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find pending sync queue items: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var items []models.SyncQueueItem
+	if err = cursor.All(ctx, &items); err != nil {
+		return nil, fmt.Errorf("failed to decode pending sync queue items: %w", err)
+	}
+	return items, nil
+}
+
+func (r *MongoDBRepository) GetConflictQueueItems(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncQueueItem, error) {
+	collection := r.db.Collection("sync_queue")
+
+	cursor, err := collection.Find(ctx,
+		bson.M{
+			"user_id": userID,
+			"type":    models.SyncTypeConflict,
+		},
+		options.Find().
+			SetSort(bson.M{"priority": -1, "created_at": 1}).
+			SetLimit(int64(limit)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find conflict queue items: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var items []models.SyncQueueItem
+	if err = cursor.All(ctx, &items); err != nil {
+		return nil, fmt.Errorf("failed to decode conflict queue items: %w", err)
+	}
+	return items, nil
+}
+
+func (r *MongoDBRepository) CleanupCompletedQueueItems(ctx context.Context, olderThan time.Duration) (int64, error) {
+	collection := r.db.Collection("sync_queue")
+
+	cutoffTime := time.Now().Add(-olderThan)
+	result, err := collection.DeleteMany(ctx, bson.M{
+		"status":       models.SyncQueueCompleted,
+		"completed_at": bson.M{"$lt": cutoffTime},
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to cleanup completed queue items: %w", err)
+	}
+	return result.DeletedCount, nil
+}
+
+// Background sync status operations
+func (r *MongoDBRepository) GetBackgroundSyncStatus(ctx context.Context, userID primitive.ObjectID) (*models.BackgroundSyncStatus, error) {
+	collection := r.db.Collection("background_sync_status")
+
+	var status models.BackgroundSyncStatus
+	err := collection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&status)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// Create default status
+			status = models.BackgroundSyncStatus{
+				ID:               primitive.NewObjectID(),
+				UserID:           userID,
+				IsEnabled:        true,
+				LastSyncAt:       time.Now(),
+				PendingItems:     0,
+				FailedItems:      0,
+				ConflictItems:    0,
+				AutoRetryEnabled: true,
+				NextScheduledRun: time.Now().Add(5 * time.Minute),
+				UpdatedAt:        time.Now(),
+			}
+
+			_, insertErr := collection.InsertOne(ctx, status)
+			if insertErr != nil {
+				return nil, fmt.Errorf("failed to create default background sync status: %w", insertErr)
+			}
+			return &status, nil
+		}
+		return nil, fmt.Errorf("background sync status not found: %w", err)
+	}
+	return &status, nil
+}
+
+func (r *MongoDBRepository) UpdateBackgroundSyncStatus(ctx context.Context, status *models.BackgroundSyncStatus) error {
+	collection := r.db.Collection("background_sync_status")
+
+	status.UpdatedAt = time.Now()
+	_, err := collection.ReplaceOne(
+		ctx,
+		bson.M{"user_id": status.UserID},
+		status,
+		options.Replace().SetUpsert(true),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update background sync status: %w", err)
+	}
+	return nil
+}
+
 // Close closes the MongoDB repository
 func (r *MongoDBRepository) Close() error {
 	// MongoDB connection is managed by the database package

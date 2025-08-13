@@ -43,6 +43,7 @@ type App struct {
 	jwtService          *services.JWTRefreshService
 	encryptionService   *services.EncryptionService
 	pciService          *services.PCIDSSService
+	auditService        *services.AuditService
 	authHandler         *handlers.AuthHandler
 	enhancedAuthHandler *handlers.EnhancedAuthHandler
 	server              *fiber.App
@@ -288,6 +289,10 @@ func (a *App) initializeSecurityServices() error {
 	authHandler := handlers.NewAuthHandler(jwtService, encryptionService, a.logger, a.authSvc)
 	a.authHandler = authHandler
 
+	// Initialize audit service for compliance and security monitoring
+	auditService := services.NewAuditService(a.mongoDB.GetDB(), a.logger.Logger)
+	a.auditService = auditService
+
 	// Initialize enhanced auth handler for biometric and advanced auth features
 	// Using stub implementations for development
 	stubEnhancedAuthService := services.NewStubEnhancedAuthService(a.logger.Logger)
@@ -300,6 +305,7 @@ func (a *App) initializeSecurityServices() error {
 		stubUserService,
 		stubOTPService,
 		stubCaptchaService,
+		auditService,
 		a.logger.Logger,
 	)
 	a.enhancedAuthHandler = enhancedAuthHandler
@@ -308,6 +314,7 @@ func (a *App) initializeSecurityServices() error {
 		zap.String("jwt_service", "enabled"),
 		zap.String("encryption_service", "enabled"),
 		zap.String("pci_service", "enabled"),
+		zap.String("audit_service", "enabled"),
 		zap.String("enhanced_auth_handler", "enabled"),
 	)
 	return nil
@@ -382,8 +389,11 @@ func (a *App) initializeServer() error {
 		return fmt.Errorf("failed to create jwt auth middleware: %w", err)
 	}
 
+	// Audit middleware for compliance and security monitoring
+	auditMiddleware := middleware.NewAuditMiddleware(a.auditService, a.logger.Logger)
+
 	// Setup routes
-	a.setupRoutes(app, jwtMiddleware, apiLimiter)
+	a.setupRoutes(app, jwtMiddleware, auditMiddleware, apiLimiter)
 
 	a.server = app
 	a.logger.Info("Server initialized successfully")
@@ -391,7 +401,7 @@ func (a *App) initializeServer() error {
 }
 
 // setupRoutes sets up all application routes
-func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMiddleware, apiLimiter fiber.Handler) {
+func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMiddleware, auditMiddleware *middleware.AuditMiddleware, apiLimiter fiber.Handler) {
 	// Health check endpoint
 	app.Get("/health", a.healthCheck)
 
@@ -441,12 +451,13 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 
 	// Auth routes (no authentication required)
 	auth := api.Group("/auth")
-	auth.Post("/register", a.authHandler.Register)      // Using enhanced auth handler for consistency
-	auth.Post("/login", a.authHandler.Login)            // Using enhanced auth handler
-	auth.Post("/validate", a.authHandler.ValidateToken) // Using enhanced auth handler
-	auth.Post("/refresh", a.authHandler.RefreshToken)   // New refresh endpoint
-	auth.Post("/revoke", a.authHandler.RevokeToken)     // New revoke endpoint
-	auth.Get("/token-info", a.authHandler.GetTokenInfo) // New token info endpoint
+	auth.Post("/register", a.authHandler.Register)                  // Using enhanced auth handler for consistency
+	auth.Post("/login", a.authHandler.Login)                        // Using enhanced auth handler
+	auth.Post("/validate", a.authHandler.ValidateToken)             // Using enhanced auth handler
+	auth.Post("/refresh", a.authHandler.RefreshToken)               // Legacy refresh endpoint
+	auth.Post("/refresh-token", a.enhancedAuthHandler.RefreshToken) // Mobile-expected enhanced refresh endpoint
+	auth.Post("/revoke", a.authHandler.RevokeToken)                 // New revoke endpoint
+	auth.Get("/token-info", a.authHandler.GetTokenInfo)             // New token info endpoint
 	// OTP and password reset endpoints
 	auth.Post("/verify-otp", a.authHandler.VerifyOTP)
 	auth.Post("/resend-otp", a.authHandler.ResendOTP)
@@ -454,6 +465,11 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	auth.Post("/reset-password", a.authHandler.ResetPassword)
 	// Biometric authentication endpoint
 	auth.Post("/biometric-login", a.enhancedAuthHandler.BiometricLogin)
+
+	// Enhanced auth session management endpoints (require authentication)
+	auth.Get("/sessions", authMiddleware.Authenticate(), a.enhancedAuthHandler.GetSessions)
+	auth.Delete("/sessions/:id", authMiddleware.Authenticate(), a.enhancedAuthHandler.RevokeSession)
+	auth.Delete("/sessions/all", authMiddleware.Authenticate(), a.enhancedAuthHandler.RevokeAllSessions)
 
 	// Test-only endpoint to fetch latest OTP for an email (disabled in production unless explicitly enabled)
 	auth.Get("/test/get-latest-otp", a.authHandler.TestGetLatestOTP)
@@ -466,18 +482,42 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	// Users routes - PROTECTED
 	api.Get("/users/profile", authMiddleware.Authenticate(), a.getUserProfile)
 
-	// Services routes - PROTECTED
+	// Services routes - PROTECTED with RBAC and audit logging
 	api.Get("/services", authMiddleware.Authenticate(), a.getServices)
-	api.Post("/services", authMiddleware.RequireRoles(models.ProviderRole, models.AdminRole), a.createService)
-	api.Put("/services/:id", authMiddleware.RequireRoles(models.ProviderRole, models.AdminRole), a.updateService)
-	api.Delete("/services/:id", authMiddleware.RequireRoles(models.AdminRole), a.deleteService)
+	api.Post("/services",
+		authMiddleware.RequireRoles(models.ProviderRole, models.AdminRole),
+		auditMiddleware.Audit(middleware.AuditConfig{
+			Action:   services.ActionServiceCreate,
+			Resource: "services",
+		}),
+		a.createService)
+	api.Put("/services/:id",
+		authMiddleware.RequireRoles(models.ProviderRole, models.AdminRole),
+		auditMiddleware.AuditWithResourceID(services.ActionServiceUpdate, "services", "id"),
+		a.updateService)
+	api.Delete("/services/:id",
+		authMiddleware.RequireRoles(models.AdminRole),
+		auditMiddleware.AdminActionAudit(services.ActionServiceDelete, "services"),
+		a.deleteService)
 	api.Get("/services/:id", authMiddleware.Authenticate(), a.getService)
 
-	// Payment routes - PROTECTED (PCI-DSS compliant)
-	api.Post("/payments/tokenize", authMiddleware.RequireRoles(models.CustomerRole), a.tokenizePaymentMethod)
-	api.Post("/payments/process", authMiddleware.RequireRoles(models.CustomerRole), a.processPayment)
-	api.Get("/payments/validate", authMiddleware.RequireRoles(models.CustomerRole, models.AdminRole), a.validatePaymentToken)
-	api.Delete("/payments/token", authMiddleware.RequireRoles(models.CustomerRole, models.AdminRole), a.deletePaymentToken)
+	// Payment routes - PROTECTED (PCI-DSS compliant) with audit logging
+	api.Post("/payments/tokenize",
+		authMiddleware.RequireRoles(models.CustomerRole),
+		auditMiddleware.AuditSensitiveOperation(services.ActionPaymentProcess, "payments"),
+		a.tokenizePaymentMethod)
+	api.Post("/payments/process",
+		authMiddleware.RequireRoles(models.CustomerRole),
+		auditMiddleware.AuditSensitiveOperation(services.ActionPaymentProcess, "payments"),
+		a.processPayment)
+	api.Get("/payments/validate",
+		authMiddleware.RequireRoles(models.CustomerRole, models.AdminRole),
+		auditMiddleware.Audit(middleware.AuditConfig{Action: services.ActionPaymentProcess, Resource: "payments"}),
+		a.validatePaymentToken)
+	api.Delete("/payments/token",
+		authMiddleware.RequireRoles(models.CustomerRole, models.AdminRole),
+		auditMiddleware.AuditSensitiveOperation(services.ActionPaymentProcess, "payments"),
+		a.deletePaymentToken)
 
 	// Sync routes - PROTECTED for offline-first functionality
 	api.Post("/sync/data", authMiddleware.Authenticate(), a.syncData)
@@ -487,13 +527,25 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	api.Get("/sync/status/:user_id", authMiddleware.Authenticate(), a.getSyncStatus)
 	api.Post("/sync/decompress", authMiddleware.Authenticate(), a.decompressData)
 
-	// Wallet routes - PROTECTED (online-only via handler, still require auth)
+	// Wallet routes - PROTECTED with RBAC and audit logging (sensitive financial operations)
 	momoClient := services.NewMomoClient(a.config.Momo.BaseURL, a.config.Momo.TargetEnvironment, a.config.Momo.APIUser, a.config.Momo.APIKey, a.config.Momo.SubscriptionKeyCollection, a.config.Momo.SubscriptionKeyDisbursement)
 	walletHandler := handlers.NewWalletHandlerWithLedger(momoClient, a.logger, ledgerSvc)
-	api.Post("/wallet/topup", authMiddleware.Authenticate(), walletHandler.Topup)
-	api.Post("/wallet/pay", authMiddleware.Authenticate(), walletHandler.PayEscrow)
-	api.Post("/wallet/withdraw", authMiddleware.Authenticate(), walletHandler.Withdraw)
-	api.Get("/wallet/balances", authMiddleware.Authenticate(), walletHandler.Balances)
+	api.Post("/wallet/topup",
+		authMiddleware.RequireRoles(models.CustomerRole, models.ProviderRole),
+		auditMiddleware.AuditSensitiveOperation(services.ActionWalletCreate, "wallet"),
+		walletHandler.Topup)
+	api.Post("/wallet/pay",
+		authMiddleware.RequireRoles(models.CustomerRole),
+		auditMiddleware.AuditSensitiveOperation(services.ActionPaymentProcess, "wallet"),
+		walletHandler.PayEscrow)
+	api.Post("/wallet/withdraw",
+		authMiddleware.RequireRoles(models.CustomerRole, models.ProviderRole),
+		auditMiddleware.AuditSensitiveOperation(services.ActionPaymentRefund, "wallet"),
+		walletHandler.Withdraw)
+	api.Get("/wallet/balances",
+		authMiddleware.Authenticate(),
+		auditMiddleware.Audit(middleware.AuditConfig{Action: services.ActionWalletCreate, Resource: "wallet"}),
+		walletHandler.Balances)
 
 	// Composite dashboards - PROTECTED
 	dashboardHandler := handlers.NewDashboardHandler(a.repository, ledgerSvc, a.logger)
@@ -716,7 +768,7 @@ func (a *App) syncData(c *fiber.Ctx) error {
 	}
 
 	// Use sync service for enhanced functionality
-	syncService := services.NewSyncService(a.mongoDB.GetDB(), a.logger)
+	syncService := services.NewSyncService(a.repository, a.auditService, a.logger.Logger)
 	response, err := syncService.GetUnsyncedDataWithCheckpoint(c.Context(), &req)
 	if err != nil {
 		a.logger.Error("Failed to sync data", err,
@@ -795,7 +847,7 @@ func (a *App) getUnsyncedDataWithCheckpoint(c *fiber.Ctx) error {
 	}
 
 	// Use sync service for enhanced functionality
-	syncService := services.NewSyncService(a.mongoDB.GetDB(), a.logger)
+	syncService := services.NewSyncService(a.repository, a.auditService, a.logger.Logger)
 	response, err := syncService.GetUnsyncedDataWithCheckpoint(c.Context(), &req)
 	if err != nil {
 		a.logger.Error("Failed to get unsynced data with checkpoint", err,
@@ -825,7 +877,7 @@ func (a *App) getChunkedUnsyncedData(c *fiber.Ctx) error {
 	}
 
 	// Use sync service for enhanced functionality
-	syncService := services.NewSyncService(a.mongoDB.GetDB(), a.logger)
+	syncService := services.NewSyncService(a.repository, a.auditService, a.logger.Logger)
 	response, err := syncService.GetChunkedUnsyncedData(c.Context(), &req)
 	if err != nil {
 		a.logger.Error("Failed to get chunked unsynced data", err,
@@ -855,7 +907,7 @@ func (a *App) getSyncStatus(c *fiber.Ctx) error {
 	}
 
 	// Use sync service for enhanced functionality
-	syncService := services.NewSyncService(a.mongoDB.GetDB(), a.logger)
+	syncService := services.NewSyncService(a.repository, a.auditService, a.logger.Logger)
 	status, err := syncService.GetSyncStatus(c.Context(), userID)
 	if err != nil {
 		a.logger.Error("Failed to get sync status", err,
@@ -896,7 +948,7 @@ func (a *App) decompressData(c *fiber.Ctx) error {
 	}
 
 	// Decompress data
-	syncService := services.NewSyncService(a.mongoDB.GetDB(), a.logger)
+	syncService := services.NewSyncService(a.repository, a.auditService, a.logger.Logger)
 	decompressedData, err := syncService.DecompressData(compressedBytes)
 	if err != nil {
 		a.logger.Error("Failed to decompress data", err)

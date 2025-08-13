@@ -7,50 +7,101 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/smorting/backend/configs"
+	"github.com/smorting/backend/internal/auth"
+	"github.com/smorting/backend/internal/database"
+	"github.com/smorting/backend/internal/handlers"
 	"github.com/smorting/backend/internal/models"
+	"github.com/smorting/backend/internal/services"
+	"github.com/smorting/backend/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // TestAuthenticationIntegration tests all authentication endpoints comprehensively
 func TestAuthenticationIntegration(t *testing.T) {
-	// Setup test environment
-	// TODO: Fix integration test setup
-	// config := &configs.Config{
-	//	Database: configs.DatabaseConfig{
-	//		InMemory: true,
-	//		Driver:   "mongodb",
-	//	},
-	// }
-	// app, err := cmd.NewApp(config)
+	// Logger
+	lg, err := logger.New("debug", "console", "stdout")
+	require.NoError(t, err)
+
+	// In-memory repo and services
+	repo := database.NewMemoryDatabase()
+
+	accessSecret := make([]byte, 32)
+	refreshSecret := make([]byte, 32)
+	for i := range accessSecret {
+		accessSecret[i] = byte(i + 1)
+	}
+	for i := range refreshSecret {
+		refreshSecret[i] = byte(i + 32)
+	}
+	jwtService := services.NewJWTRefreshService(accessSecret, refreshSecret, lg.Logger)
+
+	encKey := make([]byte, 32)
+	for i := range encKey {
+		encKey[i] = byte(i + 64)
+	}
+	encryptionService, err := services.NewEncryptionService(encKey)
+	require.NoError(t, err)
+
+	authConfig := &configs.AuthConfig{
+		JWTSecret:     "test-secret-for-legacy-jwt-at-least-32-chars-long",
+		JWTExpiration: 30 * time.Minute,
+		BCryptCost:    10,
+	}
+	authSvc, err := auth.NewMongoDBService(repo, authConfig, lg)
+	require.NoError(t, err)
+
+	authHandler := handlers.NewAuthHandler(jwtService, encryptionService, lg, authSvc)
 
 	app := fiber.New()
+	api := app.Group("/api/v1")
+	authGroup := api.Group("/auth")
+	authGroup.Post("/register", authHandler.Register)
+	authGroup.Post("/login", authHandler.Login)
 
-	// Add basic routes for testing
-	app.Post("/api/v1/auth/register", func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-			"error":   "Not implemented",
-			"message": "Registration endpoint not implemented yet",
-		})
+	// Adapter: body-based validate endpoint for this test suite
+	api.Post("/auth/validate", func(c *fiber.Ctx) error {
+		var req struct {
+			Token string `json:"token"`
+		}
+		if err := c.BodyParser(&req); err != nil && c.Get("Content-Type") == "application/json" {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+				"error":   "Invalid request body",
+				"message": "Failed to parse request body",
+			})
+		}
+		if req.Token == "" {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error":   "Invalid token",
+				"message": "The provided token is invalid or expired",
+			})
+		}
+		claims, err := jwtService.ValidateAccessToken(req.Token)
+		if err != nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error":   "Invalid token",
+				"message": "The provided token is invalid or expired",
+			})
+		}
+		userID, _ := primitive.ObjectIDFromHex(claims.UserID)
+		user, uerr := repo.GetUserByID(c.Context(), userID)
+		if uerr != nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error":   "Invalid token",
+				"message": "The provided token is invalid or expired",
+			})
+		}
+		return c.JSON(struct {
+			Valid bool        `json:"valid"`
+			User  models.User `json:"user"`
+		}{Valid: true, User: *user})
 	})
 
-	app.Post("/api/v1/auth/login", func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-			"error":   "Not implemented",
-			"message": "Login endpoint not implemented yet",
-		})
-	})
-
-	app.Post("/api/v1/auth/validate", func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-			"error":   "Not implemented",
-			"message": "Validation endpoint not implemented yet",
-		})
-	})
-
-	err := error(nil)
 	require.NoError(t, err)
 	defer app.Shutdown()
 

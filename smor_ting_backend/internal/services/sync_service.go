@@ -4,245 +4,245 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"time"
 
+	"github.com/smorting/backend/internal/database"
 	"github.com/smorting/backend/internal/models"
-	"github.com/smorting/backend/pkg/logger"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
 
-// SyncService handles enhanced sync operations with checkpoint, compression, and metrics
+// SyncService handles offline sync operations
 type SyncService struct {
-	db     *mongo.Database
-	logger *logger.Logger
+	repo         database.Repository
+	auditService *AuditService
+	logger       *zap.Logger
 }
 
 // NewSyncService creates a new sync service
-func NewSyncService(db *mongo.Database, logger *logger.Logger) *SyncService {
+func NewSyncService(repo database.Repository, auditService *AuditService, logger *zap.Logger) *SyncService {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
 	return &SyncService{
-		db:     db,
-		logger: logger,
+		repo:         repo,
+		auditService: auditService,
+		logger:       logger,
 	}
 }
 
-// GetUnsyncedDataWithCheckpoint gets unsynced data with checkpoint support
+// GetSyncStatus returns the current sync status for a user
+func (s *SyncService) GetSyncStatus(ctx context.Context, userID primitive.ObjectID) (*models.SyncStatus, error) {
+	status, err := s.repo.GetSyncStatus(ctx, userID)
+	if err != nil {
+		s.logger.Error("Failed to get sync status", zap.Error(err), zap.String("userID", userID.Hex()))
+		return nil, err
+	}
+
+	// Update the status to reflect current connectivity
+	status.UpdatedAt = time.Now()
+
+	return status, nil
+}
+
+// UpdateSyncStatus updates the sync status for a user
+func (s *SyncService) UpdateSyncStatus(ctx context.Context, userID primitive.ObjectID, update *models.SyncStatus) error {
+	update.UserID = userID
+	update.UpdatedAt = time.Now()
+
+	err := s.repo.UpdateSyncStatus(ctx, update)
+	if err != nil {
+		s.logger.Error("Failed to update sync status", zap.Error(err), zap.String("userID", userID.Hex()))
+		return err
+	}
+
+	s.logger.Info("Sync status updated",
+		zap.String("userID", userID.Hex()),
+		zap.Bool("isOnline", update.IsOnline),
+		zap.String("connectionType", update.ConnectionType))
+
+	return nil
+}
+
+// SyncUp processes offline changes and merges them with server data
+func (s *SyncService) SyncUp(ctx context.Context, userID primitive.ObjectID, changes map[string]interface{}) error {
+	start := time.Now()
+
+	// Start sync
+	err := s.markSyncInProgress(ctx, userID, true)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// Mark sync as complete
+		s.markSyncInProgress(ctx, userID, false)
+	}()
+
+	// Apply changes
+	err = s.repo.SyncData(ctx, userID, changes)
+	if err != nil {
+		s.logger.Error("Failed to sync data up", zap.Error(err), zap.String("userID", userID.Hex()))
+
+		// Record failed sync metrics
+		s.recordSyncMetrics(ctx, userID, false, 0, time.Since(start), err.Error())
+		return err
+	}
+
+	// Record successful sync metrics
+	recordCount := s.countRecords(changes)
+	s.recordSyncMetrics(ctx, userID, true, recordCount, time.Since(start), "")
+
+	// Log security event for data sync
+	securityEvent := &models.SecurityEvent{
+		UserID:    userID,
+		EventType: "data_sync",
+		Metadata: map[string]interface{}{
+			"direction":     "up",
+			"record_count":  recordCount,
+			"sync_duration": time.Since(start).Milliseconds(),
+		},
+		Timestamp: time.Now(),
+	}
+	if err := s.repo.LogSecurityEvent(ctx, securityEvent); err != nil {
+		s.logger.Warn("Failed to log sync security event", zap.Error(err))
+	}
+
+	s.logger.Info("Sync up completed",
+		zap.String("userID", userID.Hex()),
+		zap.Int("recordCount", recordCount),
+		zap.Duration("duration", time.Since(start)))
+
+	return nil
+}
+
+// SyncDown retrieves server changes for the user
+func (s *SyncService) SyncDown(ctx context.Context, req *models.SyncRequest) (*models.SyncResponse, error) {
+	start := time.Now()
+
+	// Start sync
+	err := s.markSyncInProgress(ctx, req.UserID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		// Mark sync as complete
+		s.markSyncInProgress(ctx, req.UserID, false)
+	}()
+
+	// Get unsynced data with checkpoint
+	response, err := s.repo.GetUnsyncedDataWithCheckpoint(ctx, req)
+	if err != nil {
+		s.logger.Error("Failed to sync data down", zap.Error(err), zap.String("userID", req.UserID.Hex()))
+
+		// Record failed sync metrics
+		s.recordSyncMetrics(ctx, req.UserID, false, 0, time.Since(start), err.Error())
+		return nil, err
+	}
+
+	// Update response with actual duration
+	response.SyncDuration = time.Since(start)
+
+	// Record successful sync metrics
+	s.recordSyncMetrics(ctx, req.UserID, true, response.RecordsCount, time.Since(start), "")
+
+	// Log security event for data sync
+	securityEvent := &models.SecurityEvent{
+		UserID:    req.UserID,
+		EventType: "data_sync",
+		Metadata: map[string]interface{}{
+			"direction":     "down",
+			"record_count":  response.RecordsCount,
+			"data_size":     response.DataSize,
+			"compressed":    response.Compressed,
+			"sync_duration": response.SyncDuration.Milliseconds(),
+		},
+		Timestamp: time.Now(),
+	}
+	if err := s.repo.LogSecurityEvent(ctx, securityEvent); err != nil {
+		s.logger.Warn("Failed to log sync security event", zap.Error(err))
+	}
+
+	s.logger.Info("Sync down completed",
+		zap.String("userID", req.UserID.Hex()),
+		zap.Int("recordCount", response.RecordsCount),
+		zap.Duration("duration", response.SyncDuration))
+
+	return response, nil
+}
+
+// SyncDownChunked retrieves server changes in chunks for large datasets
+func (s *SyncService) SyncDownChunked(ctx context.Context, req *models.ChunkedSyncRequest) (*models.ChunkedSyncResponse, error) {
+	start := time.Now()
+
+	response, err := s.repo.GetChunkedUnsyncedData(ctx, req)
+	if err != nil {
+		s.logger.Error("Failed to sync chunked data down", zap.Error(err), zap.String("userID", req.UserID.Hex()))
+		return nil, err
+	}
+
+	// Log chunked sync
+	s.logger.Info("Chunked sync completed",
+		zap.String("userID", req.UserID.Hex()),
+		zap.Int("chunkIndex", req.ChunkIndex),
+		zap.Int("recordCount", response.RecordsCount),
+		zap.Bool("hasMore", response.HasMore),
+		zap.Duration("duration", time.Since(start)))
+
+	return response, nil
+}
+
+// Backwards-compat wrappers used by callers expecting these method names
+// GetUnsyncedDataWithCheckpoint delegates to SyncDown
 func (s *SyncService) GetUnsyncedDataWithCheckpoint(ctx context.Context, req *models.SyncRequest) (*models.SyncResponse, error) {
-	startTime := time.Now()
-
-	s.logger.Info("Starting sync with checkpoint",
-		zap.String("user_id", req.UserID.Hex()),
-		zap.String("checkpoint", req.Checkpoint),
-		zap.Bool("compression", req.Compression),
-		zap.Int("limit", req.Limit),
-	)
-
-	// Get or create checkpoint
-	checkpoint, err := s.getOrCreateCheckpoint(ctx, req.UserID, req.Checkpoint)
-	if err != nil {
-		s.logger.Error("Failed to get checkpoint", err,
-			zap.String("user_id", req.UserID.Hex()),
-		)
-		return nil, fmt.Errorf("failed to get checkpoint: %w", err)
-	}
-
-	// Get unsynced data
-	data, err := s.getUnsyncedData(ctx, req.UserID, checkpoint.LastSyncAt, req.Limit)
-	if err != nil {
-		s.logger.Error("Failed to get unsynced data", err,
-			zap.String("user_id", req.UserID.Hex()),
-		)
-		return nil, fmt.Errorf("failed to get unsynced data: %w", err)
-	}
-
-	// Calculate data size
-	dataSize := s.calculateDataSize(data)
-
-	// Compress data if requested
-	var compressed bool
-	var compressedData []byte
-	if req.Compression {
-		compressedData, err = s.compressData(data)
-		if err != nil {
-			s.logger.Error("Failed to compress data", err,
-				zap.String("user_id", req.UserID.Hex()),
-			)
-			return nil, fmt.Errorf("failed to compress data: %w", err)
-		}
-		compressed = true
-	}
-
-	// Create new checkpoint
-	newCheckpoint, err := s.createCheckpoint(ctx, req.UserID, data)
-	if err != nil {
-		s.logger.Error("Failed to create checkpoint", err,
-			zap.String("user_id", req.UserID.Hex()),
-		)
-		return nil, fmt.Errorf("failed to create checkpoint: %w", err)
-	}
-
-	// Calculate sync duration
-	syncDuration := time.Since(startTime)
-
-	// Log sync metrics
-	s.logSyncMetrics(ctx, req.UserID, syncDuration, dataSize, int64(len(compressedData)), len(data), true, "")
-
-	s.logger.Info("Sync completed successfully",
-		zap.String("user_id", req.UserID.Hex()),
-		zap.Duration("duration", syncDuration),
-		zap.Int64("data_size", dataSize),
-		zap.Int64("compressed_size", int64(len(compressedData))),
-		zap.Int("records_count", len(data)),
-		zap.Bool("compressed", compressed),
-	)
-
-	response := &models.SyncResponse{
-		Data:         data,
-		Checkpoint:   newCheckpoint.Checkpoint,
-		LastSyncAt:   time.Now(),
-		HasMore:      len(data) >= req.Limit,
-		Compressed:   compressed,
-		DataSize:     dataSize,
-		RecordsCount: len(data),
-		SyncDuration: syncDuration,
-	}
-
-	return response, nil
+	return s.SyncDown(ctx, req)
 }
 
-// GetChunkedUnsyncedData gets unsynced data in chunks
+// GetChunkedUnsyncedData delegates to SyncDownChunked
 func (s *SyncService) GetChunkedUnsyncedData(ctx context.Context, req *models.ChunkedSyncRequest) (*models.ChunkedSyncResponse, error) {
-	startTime := time.Now()
-
-	s.logger.Info("Starting chunked sync",
-		zap.String("user_id", req.UserID.Hex()),
-		zap.Int("chunk_index", req.ChunkIndex),
-		zap.Int("chunk_size", req.ChunkSize),
-	)
-
-	// Get checkpoint
-	checkpoint, err := s.getOrCreateCheckpoint(ctx, req.UserID, req.Checkpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get checkpoint: %w", err)
-	}
-
-	// Get chunked data
-	data, hasMore, err := s.getChunkedData(ctx, req.UserID, checkpoint.LastSyncAt, req.ChunkIndex, req.ChunkSize)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get chunked data: %w", err)
-	}
-
-	// Convert data to map for compression and checkpoint
-	dataMap := make(map[string]interface{})
-	for i, item := range data {
-		dataMap[fmt.Sprintf("item_%d", i)] = item
-	}
-
-	// Compress data
-	compressedData, err := s.compressData(dataMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compress data: %w", err)
-	}
-
-	// Create new checkpoint
-	newCheckpoint, err := s.createCheckpoint(ctx, req.UserID, dataMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create checkpoint: %w", err)
-	}
-
-	// Generate resume token
-	resumeToken, err := s.generateResumeToken()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate resume token: %w", err)
-	}
-
-	syncDuration := time.Since(startTime)
-	dataSize := s.calculateDataSize(dataMap)
-
-	// Log sync metrics
-	s.logSyncMetrics(ctx, req.UserID, syncDuration, dataSize, int64(len(compressedData)), len(data), true, "")
-
-	response := &models.ChunkedSyncResponse{
-		Data:         data,
-		HasMore:      hasMore,
-		NextChunk:    req.ChunkIndex + 1,
-		ResumeToken:  resumeToken,
-		TotalChunks:  -1, // Will be calculated if needed
-		Checkpoint:   newCheckpoint.Checkpoint,
-		Compressed:   true,
-		DataSize:     dataSize,
-		RecordsCount: len(data),
-	}
-
-	return response, nil
+	return s.SyncDownChunked(ctx, req)
 }
 
-// getOrCreateCheckpoint gets or creates a checkpoint for a user
-func (s *SyncService) getOrCreateCheckpoint(ctx context.Context, userID primitive.ObjectID, checkpointStr string) (*models.SyncCheckpoint, error) {
-	collection := s.db.Collection("sync_checkpoints")
-
-	if checkpointStr != "" {
-		// Try to find existing checkpoint
-		var checkpoint models.SyncCheckpoint
-		err := collection.FindOne(ctx, bson.M{
-			"user_id":    userID,
-			"checkpoint": checkpointStr,
-		}).Decode(&checkpoint)
-
-		if err == nil {
-			return &checkpoint, nil
-		}
-	}
-
-	// Create new checkpoint
-	checkpoint := &models.SyncCheckpoint{
-		ID:         primitive.NewObjectID(),
-		UserID:     userID,
-		Checkpoint: s.generateCheckpoint(),
-		LastSyncAt: time.Now(),
-		Version:    1,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-	}
-
-	_, err := collection.InsertOne(ctx, checkpoint)
+// DecompressData provides simple gzip decompression and JSON decoding helper for API handler
+func (s *SyncService) DecompressData(compressed []byte) (interface{}, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(compressed))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create checkpoint: %w", err)
+		return nil, err
+	}
+	defer reader.Close()
+
+	decompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
 	}
 
-	return checkpoint, nil
+	// Try to decode JSON payload into generic structure
+	var anyJSON interface{}
+	if err := json.Unmarshal(decompressed, &anyJSON); err == nil {
+		return anyJSON, nil
+	}
+
+	// Fallback: return raw string
+	return string(decompressed), nil
 }
 
-// createCheckpoint creates a new checkpoint based on current data state
-func (s *SyncService) createCheckpoint(ctx context.Context, userID primitive.ObjectID, data map[string]interface{}) (*models.SyncCheckpoint, error) {
-	// Create checkpoint data
-	checkpointData := map[string]interface{}{
-		"user_id":   userID.Hex(),
-		"timestamp": time.Now().Unix(),
-		"data_keys": s.getDataKeys(data),
-		"version":   1,
-	}
-
-	// Encode checkpoint data
-	checkpointJSON, err := json.Marshal(checkpointData)
+// GetSyncMetrics returns recent sync metrics for a user
+func (s *SyncService) GetSyncMetrics(ctx context.Context, userID primitive.ObjectID, limit int) ([]models.SyncMetrics, error) {
+	metrics, err := s.repo.GetRecentSyncMetrics(ctx, userID, limit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal checkpoint data: %w", err)
+		s.logger.Error("Failed to get sync metrics", zap.Error(err), zap.String("userID", userID.Hex()))
+		return nil, err
 	}
 
-	checkpoint := base64.StdEncoding.EncodeToString(checkpointJSON)
+	return metrics, nil
+}
 
-	// Save checkpoint
-	collection := s.db.Collection("sync_checkpoints")
-	checkpointDoc := &models.SyncCheckpoint{
-		ID:         primitive.NewObjectID(),
+// CreateSyncCheckpoint creates a sync checkpoint for resumable sync
+func (s *SyncService) CreateSyncCheckpoint(ctx context.Context, userID primitive.ObjectID, checkpoint string) error {
+	checkpointModel := &models.SyncCheckpoint{
 		UserID:     userID,
 		Checkpoint: checkpoint,
 		LastSyncAt: time.Now(),
@@ -251,218 +251,67 @@ func (s *SyncService) createCheckpoint(ctx context.Context, userID primitive.Obj
 		UpdatedAt:  time.Now(),
 	}
 
-	_, err = collection.InsertOne(ctx, checkpointDoc)
+	err := s.repo.CreateSyncCheckpoint(ctx, checkpointModel)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save checkpoint: %w", err)
+		s.logger.Error("Failed to create sync checkpoint", zap.Error(err), zap.String("userID", userID.Hex()))
+		return err
 	}
 
-	return checkpointDoc, nil
+	return nil
 }
 
-// getUnsyncedData gets unsynced data for a user
-func (s *SyncService) getUnsyncedData(ctx context.Context, userID primitive.ObjectID, lastSyncAt time.Time, limit int) (map[string]interface{}, error) {
-	data := make(map[string]interface{})
+// Helper methods
 
-	// Get unsynced bookings
-	bookingsCollection := s.db.Collection("bookings")
-	limit64 := int64(limit)
-	bookingsCursor, err := bookingsCollection.Find(ctx, bson.M{
-		"customer_id":  userID,
-		"last_sync_at": bson.M{"$gt": lastSyncAt},
-	}, &options.FindOptions{
-		Limit: &limit64,
-	})
+func (s *SyncService) markSyncInProgress(ctx context.Context, userID primitive.ObjectID, inProgress bool) error {
+	status, err := s.repo.GetSyncStatus(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get unsynced bookings: %w", err)
-	}
-	defer bookingsCursor.Close(ctx)
-
-	var bookings []models.Booking
-	if err = bookingsCursor.All(ctx, &bookings); err != nil {
-		return nil, fmt.Errorf("failed to decode bookings: %w", err)
+		return err
 	}
 
-	// Get unsynced user data
-	userCollection := s.db.Collection("users")
-	var user models.User
-	err = userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
-	}
+	status.SyncInProgress = inProgress
+	status.UpdatedAt = time.Now()
 
-	data["bookings"] = bookings
-	data["user"] = user
-
-	return data, nil
+	return s.repo.UpdateSyncStatus(ctx, status)
 }
 
-// getChunkedData gets data in chunks
-func (s *SyncService) getChunkedData(ctx context.Context, userID primitive.ObjectID, lastSyncAt time.Time, chunkIndex, chunkSize int) ([]interface{}, bool, error) {
-	// For now, return all data as a single chunk
-	// In a real implementation, you would implement proper pagination
-	data, err := s.getUnsyncedData(ctx, userID, lastSyncAt, chunkSize)
-	if err != nil {
-		return nil, false, err
-	}
-
-	// Convert to slice
-	var result []interface{}
-	for _, v := range data {
-		result = append(result, v)
-	}
-
-	return result, false, nil
-}
-
-// compressData compresses data using gzip
-func (s *SyncService) compressData(data map[string]interface{}) ([]byte, error) {
-	// Marshal to JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal data: %w", err)
-	}
-
-	// Compress with gzip
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-
-	if _, err := gz.Write(jsonData); err != nil {
-		return nil, fmt.Errorf("failed to write to gzip: %w", err)
-	}
-
-	if err := gz.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close gzip: %w", err)
-	}
-
-	return buf.Bytes(), nil
-}
-
-// DecompressData decompresses gzip data
-func (s *SyncService) DecompressData(compressedData []byte) (map[string]interface{}, error) {
-	// Create gzip reader
-	gz, err := gzip.NewReader(bytes.NewReader(compressedData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-	}
-	defer gz.Close()
-
-	// Read decompressed data
-	decompressedData, err := io.ReadAll(gz)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read decompressed data: %w", err)
-	}
-
-	// Unmarshal JSON
-	var data map[string]interface{}
-	if err := json.Unmarshal(decompressedData, &data); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
-	}
-
-	return data, nil
-}
-
-// calculateDataSize calculates the size of data in bytes
-func (s *SyncService) calculateDataSize(data map[string]interface{}) int64 {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return 0
-	}
-	return int64(len(jsonData))
-}
-
-// generateCheckpoint generates a unique checkpoint string
-func (s *SyncService) generateCheckpoint() string {
-	bytes := make([]byte, 32)
-	rand.Read(bytes)
-	return base64.StdEncoding.EncodeToString(bytes)
-}
-
-// generateResumeToken generates a unique resume token
-func (s *SyncService) generateResumeToken() (string, error) {
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(bytes), nil
-}
-
-// getDataKeys extracts keys from data for checkpoint
-func (s *SyncService) getDataKeys(data map[string]interface{}) []string {
-	keys := make([]string, 0, len(data))
-	for k := range data {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-// logSyncMetrics logs sync metrics for monitoring
-func (s *SyncService) logSyncMetrics(ctx context.Context, userID primitive.ObjectID, duration time.Duration, dataSize, compressedSize int64, recordsCount int, success bool, errorMsg string) {
+func (s *SyncService) recordSyncMetrics(ctx context.Context, userID primitive.ObjectID, success bool, recordCount int, duration time.Duration, errorMsg string) {
 	metrics := &models.SyncMetrics{
-		ID:                primitive.NewObjectID(),
-		UserID:            userID,
-		LastSyncAt:        time.Now(),
-		SyncDuration:      duration,
-		DataSize:          dataSize,
-		CompressedSize:    compressedSize,
-		RecordsSynced:     recordsCount,
-		SyncSuccess:       success,
-		ErrorMessage:      errorMsg,
-		NetworkType:       "unknown", // Will be set by client
-		ConnectionQuality: "unknown", // Will be set by client
-		CreatedAt:         time.Now(),
+		UserID:        userID,
+		LastSyncAt:    time.Now(),
+		SyncDuration:  duration,
+		RecordsSynced: recordCount,
+		SyncSuccess:   success,
+		ErrorMessage:  errorMsg,
+		CreatedAt:     time.Now(),
 	}
 
-	// Save metrics to database
-	collection := s.db.Collection("sync_metrics")
-	_, err := collection.InsertOne(ctx, metrics)
+	err := s.repo.CreateSyncMetrics(ctx, metrics)
 	if err != nil {
-		s.logger.Error("Failed to save sync metrics", err,
-			zap.String("user_id", userID.Hex()),
-		)
+		s.logger.Warn("Failed to record sync metrics", zap.Error(err))
 	}
-
-	// Log metrics
-	s.logger.Info("Sync metrics",
-		zap.String("user_id", userID.Hex()),
-		zap.Duration("duration", duration),
-		zap.Int64("data_size", dataSize),
-		zap.Int64("compressed_size", compressedSize),
-		zap.Int("records_count", recordsCount),
-		zap.Bool("success", success),
-		zap.String("error", errorMsg),
-	)
 }
 
-// GetSyncStatus gets the current sync status for a user
-func (s *SyncService) GetSyncStatus(ctx context.Context, userID primitive.ObjectID) (*models.SyncStatus, error) {
-	// Get user's last sync info
-	userCollection := s.db.Collection("users")
-	var user models.User
-	err := userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+func (s *SyncService) countRecords(changes map[string]interface{}) int {
+	count := 0
+	for key, value := range changes {
+		switch key {
+		case "bookings":
+			if bookings, ok := value.([]interface{}); ok {
+				count += len(bookings)
+			}
+		case "services":
+			if services, ok := value.([]interface{}); ok {
+				count += len(services)
+			}
+		case "profile_updates":
+			count += 1
+		default:
+			if slice, ok := value.([]interface{}); ok {
+				count += len(slice)
+			} else {
+				count += 1
+			}
+		}
 	}
-
-	// Count pending changes
-	bookingsCollection := s.db.Collection("bookings")
-	pendingCount, err := bookingsCollection.CountDocuments(ctx, bson.M{
-		"customer_id":  userID,
-		"last_sync_at": bson.M{"$lt": user.LastSyncAt},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to count pending changes: %w", err)
-	}
-
-	status := &models.SyncStatus{
-		UserID:          userID,
-		IsOnline:        !user.IsOffline,
-		LastSyncAt:      user.LastSyncAt,
-		PendingChanges:  int(pendingCount),
-		SyncInProgress:  false,     // Will be set by client
-		ConnectionType:  "unknown", // Will be set by client
-		ConnectionSpeed: "unknown", // Will be set by client
-		UpdatedAt:       time.Now(),
-	}
-
-	return status, nil
+	return count
 }
