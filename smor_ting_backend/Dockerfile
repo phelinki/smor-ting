@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -a -installsuffix cgo \
     -ldflags="-s -w" \
     -o smor-ting-api \
-    cmd/main.go
+    ./cmd
 
 # Production stage
 FROM alpine:latest

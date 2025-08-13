@@ -257,10 +257,20 @@ fi
 
 print_status "Appium server running (PID: $APPIUM_PID)"
 
-# Ensure Appium CLI present and install UiAutomator2 driver
+# Ensure Appium CLI present and install UiAutomator2 and Flutter drivers
 if ! command -v appium >/dev/null 2>&1; then
     print_info "Installing Appium 2 CLI..."
     npm i -g appium@latest >/dev/null 2>&1 || true
+fi
+
+# Ensure drivers
+if ! appium driver list --installed | grep -q uiautomator2; then
+  print_info "Installing Appium UiAutomator2 driver..."
+  appium driver install uiautomator2 >/dev/null 2>&1 || true
+fi
+if ! appium driver list --installed | grep -q appium-flutter-driver; then
+  print_info "Installing Appium Flutter driver..."
+  appium driver install --source=npm appium-flutter-driver >/dev/null 2>&1 || true
 fi
 
 # Step 6: Install Python dependencies
@@ -313,7 +323,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 REPORT_NAME="android-report-${TIMESTAMP}.html"
 JUNIT_NAME="android-junit-${TIMESTAMP}.xml"
 
-pytest $PYTEST_ARGS \
+python3 -m pytest $PYTEST_ARGS \
     -v \
     --platform=android \
     --environment="$ENVIRONMENT" \
