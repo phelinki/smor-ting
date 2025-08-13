@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="4" failures="1" skipped="5" tests="11" time="1900.292" timestamp="2025-08-13T08:13:43.265187" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_visibility_when_available" time="309.531"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:149: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_enable_biometric_authentication" time="247.504"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:158: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_disable_biometric_authentication" time="19.877"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:129: in setup_method
+    super().setup_method(method)
+tests/base_test.py:69: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_button_visibility" time="66.830"><skipped type="pytest.skip" message="Biometric unlock not available - either not supported or not enabled">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:224: Biometric unlock not available - either not supported or not enabled</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_flow" time="63.703"><skipped type="pytest.skip" message="Biometric unlock not available">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:233: Biometric unlock not available</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_with_no_enrolled_biometrics" time="65.692" /><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_persistence" time="218.019"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:288: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_forgot_password" name="test_forgot_password_flow" time="234.842"><failure message="selenium.common.exceptions.TimeoutException: Message: &#10;Stacktrace:&#10;NoSuchElementError: An element could not be located on the page using the given search parameters.&#10;    at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)&#10;    at processTicksAndRejections (node:internal/process/task_queues:105:5)&#10;    at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)&#10;    at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)">tests/common/page_objects/auth_pages.py:334: in tap_forgot_password_link
+    self.tap(locator)
+tests/common/page_objects/base_page.py:103: in tap
+    element = self.wait_for_element_clickable(locator, timeout)
+tests/common/page_objects/base_page.py:83: in wait_for_element_clickable
+    return wait.until(EC.element_to_be_clickable(locator))
+.venv/lib/python3.9/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/common/page_objects/auth_pages.py:339: in tap_forgot_password_link
+    self.tap(locator)
+tests/common/page_objects/base_page.py:103: in tap
+    element = self.wait_for_element_clickable(locator, timeout)
+tests/common/page_objects/base_page.py:83: in wait_for_element_clickable
+    return wait.until(EC.element_to_be_clickable(locator))
+.venv/lib/python3.9/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_forgot_password.py:12: in test_forgot_password_flow
+    login.tap_forgot_password_link()
+tests/common/page_objects/auth_pages.py:343: in tap_forgot_password_link
+    self.tap(alt)
+tests/common/page_objects/base_page.py:103: in tap
+    element = self.wait_for_element_clickable(locator, timeout)
+tests/common/page_objects/base_page.py:83: in wait_for_element_clickable
+    return wait.until(EC.element_to_be_clickable(locator))
+.venv/lib/python3.9/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)</failure></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="258.113"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+E   AttributeError: 'TestLogin' object has no attribute 'wait_for_element_to_be_clickable'
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="258.949"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+E   AttributeError: 'TestLogin' object has no attribute 'wait_for_element_to_be_clickable'
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="51.579"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_login.py:19: in setup_method
+    super().setup_method(method)
+tests/base_test.py:69: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

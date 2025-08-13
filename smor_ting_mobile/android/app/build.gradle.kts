@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.smorting.app.smor_ting_mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Pin to NDK version required by plugins (per Flutter build output recommendation)
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -36,6 +37,10 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+    // Suppress known lint issue as per Flutter fix guidance (Groovy lintOptions -> Kotlin DSL)
+    lint {
+        checkReleaseBuilds = false
     }
 }
 

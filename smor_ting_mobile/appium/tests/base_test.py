@@ -212,6 +212,10 @@ class BaseTest:
         except TimeoutException:
             self.logger.error(f"Element not clickable: {locator}")
             raise
+
+    # Backwards-compatible alias used in some tests
+    def wait_for_element_to_be_clickable(self, locator: tuple, timeout: int = None) -> Any:
+        return self.wait_for_element_clickable(locator, timeout)
     
     def wait_for_text_in_element(self, locator: tuple, text: str, timeout: int = None) -> bool:
         """Wait for specific text to appear in element"""

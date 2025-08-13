@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="2" tests="7" time="3166.239" timestamp="2025-08-13T01:00:05.562441" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_visibility_when_available" time="241.367"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:149: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_enable_biometric_authentication" time="226.917"><skipped type="pytest.skip" message="Biometric authentication not available on this device">/Users/kaleewou/smor-ting/smor_ting_mobile/appium/tests/auth/test_biometric_authentication.py:158: Biometric authentication not available on this device</skipped></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_disable_biometric_authentication" time="54.703"><error message="failed on setup with &quot;selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Could not proxy command to the remote server. Original error: timeout of 240000ms exceeded&#10;Stacktrace:&#10;UnknownError: An unknown server-side error occurred while processing the command. Original error: Could not proxy command to the remote server. Original error: timeout of 240000ms exceeded&#10;    at UIA2Proxy.command (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/jsonwp-proxy/proxy.js:359:13)&#10;    at runNextTicks (node:internal/process/task_queues:65:5)&#10;    at listOnTimeout (node:internal/timers:549:9)&#10;    at processTimers (node:internal/timers:523:7)&#10;    at AndroidUiautomator2Driver.doFindElementOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/lib/commands/find.js:40:5)&#10;    at doFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:47:17)&#10;    at wrappedCondFn (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:141:14)&#10;    at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:219:20)&#10;    at waitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:236:10)&#10;    at AndroidUiautomator2Driver.implicitWaitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:143:12)&#10;    at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:70:5)&#10;    at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)&#10;    at AndroidUiautomator2Driver.findElements (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:79:12)&quot;">tests/auth/test_biometric_authentication.py:129: in setup_method
+    super().setup_method(method)
+tests/base_test.py:75: in setup_method
+    self._wait_for_app_launch()
+tests/base_test.py:124: in _wait_for_app_launch
+    WebDriverWait(self.driver, timeout).until(
+.venv/lib/python3.9/site-packages/selenium/webdriver/support/wait.py:96: in until
+    value = method(self._driver)
+tests/base_test.py:125: in &lt;lambda&gt;
+    lambda driver: len(driver.find_elements(AppiumBy.XPATH, "//*")) &gt; 0
+.venv/lib/python3.9/site-packages/appium/webdriver/webdriver.py:420: in find_elements
+    return self.execute(RemoteCommand.FIND_ELEMENTS, {'using': by, 'value': value})['value'] or []
+.venv/lib/python3.9/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+.venv/lib/python3.9/site-packages/appium/webdriver/errorhandler.py:125: in check_response
+    raise exception_class(msg=message, stacktrace=format_stacktrace(stacktrace))
+E   selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Could not proxy command to the remote server. Original error: timeout of 240000ms exceeded
+E   Stacktrace:
+E   UnknownError: An unknown server-side error occurred while processing the command. Original error: Could not proxy command to the remote server. Original error: timeout of 240000ms exceeded
+E       at UIA2Proxy.command (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/jsonwp-proxy/proxy.js:359:13)
+E       at runNextTicks (node:internal/process/task_queues:65:5)
+E       at listOnTimeout (node:internal/timers:549:9)
+E       at processTimers (node:internal/timers:523:7)
+E       at AndroidUiautomator2Driver.doFindElementOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/lib/commands/find.js:40:5)
+E       at doFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:47:17)
+E       at wrappedCondFn (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:141:14)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:219:20)
+E       at waitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:236:10)
+E       at AndroidUiautomator2Driver.implicitWaitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:143:12)
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:70:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElements (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:79:12)</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_button_visibility" time="34.275"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:129: in setup_method
+    super().setup_method(method)
+tests/base_test.py:69: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_flow" time="10.650"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:129: in setup_method
+    super().setup_method(method)
+tests/base_test.py:69: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_unlock_with_no_enrolled_biometrics" time="12.696"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:129: in setup_method
+    super().setup_method(method)
+tests/base_test.py:69: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase><testcase classname="tests.auth.test_biometric_authentication.TestBiometricAuthentication" name="test_biometric_settings_persistence" time="20.336"><error message="failed on setup with &quot;Failed: Failed to create Appium driver&quot;">tests/auth/test_biometric_authentication.py:129: in setup_method
+    super().setup_method(method)
+tests/base_test.py:69: in setup_method
+    pytest.fail("Failed to create Appium driver")
+E   Failed: Failed to create Appium driver</error></testcase></testsuite></testsuites>

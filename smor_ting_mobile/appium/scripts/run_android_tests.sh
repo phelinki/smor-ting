@@ -80,8 +80,23 @@ done
 print_info "Test suite: $TEST_SUITE"
 print_info "Environment: $ENVIRONMENT"
 
+# Defaults for AVD/device if not provided
+DEFAULT_AVD="Medium_Phone_API_36.0"
+export ANDROID_AVD_NAME="${ANDROID_AVD_NAME:-$DEFAULT_AVD}"
+export ANDROID_DEVICE_NAME="${ANDROID_DEVICE_NAME:-$DEFAULT_AVD}"
+
+# Prefer Java 11 for Android tooling
+if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    export JAVA_HOME=$(/usr/libexec/java_home -v 11 2>/dev/null || echo "$JAVA_HOME")
+fi
+
 # Step 1: Check prerequisites
 print_step "Step 1: Checking prerequisites..."
+
+# If ANDROID_HOME is set, ensure common Android tools are in PATH for this session
+if [ -n "$ANDROID_HOME" ]; then
+    export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+fi
 
 # Check if we're in the right directory
 if [ ! -f "requirements.txt" ]; then
@@ -104,10 +119,36 @@ fi
 
 print_status "Prerequisites check passed"
 
-# Step 2: Check if Flutter app is built
-print_step "Step 2: Checking Flutter app..."
+# Step 2: Ensure required Android SDK components and AVD (Apple Silicon ARM64)
+print_step "Step 2: Ensuring Android SDK components and AVD..."
 
-APP_PATH="../build/app/outputs/flutter-apk/app-debug.apk"
+# Accept licenses silently
+yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+# Install required SDK packages (platform-tools, Android 34 platform, and ARM64 system image)
+if command -v sdkmanager >/dev/null 2>&1; then
+    sdkmanager "platform-tools" "platforms;android-34" "system-images;android-34;google_apis;arm64-v8a" >/dev/null 2>&1 || true
+else
+    print_warning "sdkmanager not found; ensure Android commandline tools are installed."
+fi
+
+# Create the AVD if it doesn't exist
+if ! "$ANDROID_HOME"/emulator/emulator -list-avds 2>/dev/null | grep -qx "$ANDROID_AVD_NAME"; then
+    print_info "Creating AVD '$ANDROID_AVD_NAME' for API 34 (arm64-v8a)..."
+    if command -v avdmanager >/dev/null 2>&1; then
+        echo "no" | avdmanager create avd -n "$ANDROID_AVD_NAME" -k "system-images;android-34;google_apis;arm64-v8a" -d "pixel_6" --force >/dev/null 2>&1 || true
+    else
+        print_warning "avdmanager not found; skipping AVD creation."
+    fi
+fi
+
+print_status "SDK components ensured; AVD: $ANDROID_AVD_NAME"
+
+# Step 3: Check if Flutter app is built
+print_step "Step 3: Checking Flutter app..."
+
+# Use absolute APP_PATH as requested
+APP_PATH="$(cd .. && pwd)/build/app/outputs/flutter-apk/app-debug.apk"
 if [ ! -f "$APP_PATH" ]; then
     print_warning "App not found at $APP_PATH"
     print_info "Building Flutter app..."
@@ -122,8 +163,8 @@ fi
 
 print_status "Flutter app found: $APP_PATH"
 
-# Step 3: Start Android emulator if needed
-print_step "Step 3: Checking Android emulator..."
+# Step 4: Start Android emulator if needed
+print_step "Step 4: Checking Android emulator..."
 
 # Check if any device is connected
 DEVICES=$(adb devices | grep -v "List of devices" | grep -v "^$" | wc -l)
@@ -133,7 +174,7 @@ if [ "$DEVICES" -eq 0 ]; then
     print_info "Starting Android emulator..."
     
     # List available AVDs
-    AVDS=$(emulator -list-avds)
+    AVDS=$("$ANDROID_HOME"/emulator/emulator -list-avds 2>/dev/null)
     
     if [ -z "$AVDS" ]; then
         print_error "No Android Virtual Devices found"
@@ -141,21 +182,13 @@ if [ "$DEVICES" -eq 0 ]; then
         exit 1
     fi
     
-    # Use specified device or first available AVD
-    if [ ! -z "$DEVICE_NAME" ]; then
-        SELECTED_AVD="$DEVICE_NAME"
-    else
-        SELECTED_AVD=$(echo "$AVDS" | head -n1)
-    fi
+    # Always prefer configured AVD name
+    SELECTED_AVD="$ANDROID_AVD_NAME"
     
     print_info "Starting emulator: $SELECTED_AVD"
     
-    # Start emulator with appropriate settings for CI/local
-    if [ "$ENVIRONMENT" = "ci" ]; then
-        emulator -avd "$SELECTED_AVD" -no-snapshot-save -no-audio -no-window -gpu swiftshader_indirect &
-    else
-        emulator -avd "$SELECTED_AVD" -no-snapshot-save -no-audio &
-    fi
+    # Start emulator headless using Apple Silicon friendly GPU
+    "$ANDROID_HOME"/emulator/emulator -avd "$SELECTED_AVD" -no-window -no-audio -gpu swiftshader_indirect -no-snapshot-save &
     
     EMULATOR_PID=$!
     # Ensure tests target this AVD
@@ -167,7 +200,7 @@ if [ "$DEVICES" -eq 0 ]; then
     # Wait for emulator to be fully booted
     BOOT_TIMEOUT=300  # 5 minutes
     BOOT_COUNTER=0
-    while [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" != "1" ]; do
+    until adb shell getprop sys.boot_completed 2>/dev/null | grep -q 1; do
         sleep 5
         BOOT_COUNTER=$((BOOT_COUNTER + 5))
         if [ $BOOT_COUNTER -ge $BOOT_TIMEOUT ]; then
@@ -184,8 +217,8 @@ else
     print_status "$DEVICES Android device(s) connected"
 fi
 
-# Step 4: Start Appium server
-print_step "Step 4: Starting Appium server..."
+# Step 5: Start Appium server
+print_step "Step 5: Starting Appium server..."
 
 # Kill any existing Appium processes
 pkill -f appium || true
@@ -224,14 +257,20 @@ fi
 
 print_status "Appium server running (PID: $APPIUM_PID)"
 
-# Step 5: Install Python dependencies
-print_step "Step 5: Installing Python dependencies..."
+# Ensure Appium CLI present and install UiAutomator2 driver
+if ! command -v appium >/dev/null 2>&1; then
+    print_info "Installing Appium 2 CLI..."
+    npm i -g appium@latest >/dev/null 2>&1 || true
+fi
+
+# Step 6: Install Python dependencies
+print_step "Step 6: Installing Python dependencies..."
 
 pip3 install -r requirements.txt > /dev/null 2>&1
 print_status "Python dependencies installed"
 
-# Step 6: Run tests
-print_step "Step 6: Running Android tests..."
+# Step 7: Run tests
+print_step "Step 7: Running Android tests..."
 
 # Set environment variables
 export PLATFORM=android
@@ -313,8 +352,8 @@ if [ -f "reports/$JUNIT_NAME" ]; then
     echo "  Skipped: ${SKIPPED_TESTS:-0}"
 fi
 
-# Step 7: Cleanup
-print_step "Step 7: Cleaning up..."
+# Step 8: Cleanup
+print_step "Step 8: Cleaning up..."
 
 # Stop Appium server
 if [ ! -z "$APPIUM_PID" ]; then

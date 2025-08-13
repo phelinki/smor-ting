@@ -98,6 +98,8 @@ def pytest_configure(config):
         "registration: Registration tests",
         "login: Login tests",
         "biometric: Biometric authentication tests",
+        "flutter: Flutter-specific tests",
+        "stress: Stress tests",
         "performance: Performance tests",
         "network: Network and connectivity tests",
         "ui: UI/UX tests",

@@ -35,22 +35,24 @@ class AppiumConfig:
         """Get Android-specific capabilities"""
         # Use UiAutomator2 for native Android UI testing, Flutter for Flutter-specific tests
         automation_name = os.getenv("ANDROID_AUTOMATION_NAME", "UiAutomator2")
+        is_ci = self.environment == "ci"
         capabilities = {
             "platformName": "Android", 
-            "platformVersion": os.getenv("ANDROID_API_LEVEL", "30"),
+            "platformVersion": os.getenv("ANDROID_API_LEVEL", "34"),
             "deviceName": os.getenv("ANDROID_DEVICE_NAME", "Android Emulator"),
             "automationName": automation_name,
             "app": self.app_build_path,
             "appPackage": "com.smorting.app.smor_ting_mobile",
             "appActivity": "com.smorting.app.smor_ting_mobile.MainActivity",
+            "appWaitActivity": os.getenv("ANDROID_APP_WAIT_ACTIVITY", "*") ,
             "autoGrantPermissions": True,
-            "noReset": False,
-            "fullReset": True,
+            "noReset": os.getenv("ANDROID_NO_RESET", "1") == "1" if not is_ci else False,
+            "fullReset": False if not is_ci else True,
             "newCommandTimeout": 300,
-            "androidInstallTimeout": 120000,
-            "uiautomator2ServerInstallTimeout": 120000,
-            "uiautomator2ServerLaunchTimeout": 120000,
-            "adbExecTimeout": 120000,
+            "androidInstallTimeout": int(os.getenv("ANDROID_INSTALL_TIMEOUT_MS", "300000")),
+            "uiautomator2ServerInstallTimeout": int(os.getenv("UIA2_INSTALL_TIMEOUT_MS", "300000")),
+            "uiautomator2ServerLaunchTimeout": int(os.getenv("UIA2_LAUNCH_TIMEOUT_MS", "300000")),
+            "adbExecTimeout": int(os.getenv("ADB_EXEC_TIMEOUT_MS", "300000")),
             "avd": os.getenv("ANDROID_AVD_NAME", os.getenv("ANDROID_DEVICE_NAME", "Medium_Phone_API_36.0")),
             "avdLaunchTimeout": 180000,
             "avdReadyTimeout": 180000,
@@ -135,24 +137,52 @@ class AppiumConfig:
         return base_capabilities
     
     def _get_system_port(self) -> int:
-        """Get available system port for Android"""
+        """Select a free localhost TCP port for UIAutomator2 systemPort.
+
+        Strategy:
+        - Honor SYSTEM_PORT_OFFSET if provided (use base+offset)
+        - Otherwise, scan a small range starting at a process-derived seed to find a free port
+        """
+        import socket
+
         base_port = 8200
-        # Prefer explicit offset when provided (e.g., CI matrix)
+
         explicit_offset = os.getenv("SYSTEM_PORT_OFFSET")
         if explicit_offset and explicit_offset.isdigit():
             return base_port + int(explicit_offset)
 
-        # Derive from pytest-xdist worker id when running in parallel
+        # Seed from worker id and process id for dispersion
         worker_id = os.getenv("PYTEST_XDIST_WORKER_ID", "master")
         worker_num = int(worker_id.replace("gw", "")) if "gw" in worker_id else 0
-
-        # Add a small per-process entropy to avoid collisions when multiple sessions run serially
         try:
-            pid_entropy = os.getpid() % 97  # prime-ish spread within a small band
+            pid_entropy = os.getpid() % 100
         except Exception:
             pid_entropy = 0
 
-        return base_port + worker_num + pid_entropy
+        seed = base_port + worker_num + pid_entropy
+
+        def is_free(port: int) -> bool:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind(("127.0.0.1", port))
+                return True
+            except OSError:
+                return False
+            finally:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+
+        # Scan up to 200 ports to find a free one
+        for delta in range(0, 200):
+            candidate = seed + delta
+            if is_free(candidate):
+                return candidate
+
+        # Fallback
+        return base_port
     
     # Removed ChromeDriver port management since we're not driving webviews directly
     
