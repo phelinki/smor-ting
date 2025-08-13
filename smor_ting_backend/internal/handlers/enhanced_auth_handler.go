@@ -130,8 +130,11 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	clientIP := c.IP()
 	userAgent := c.Get("User-Agent")
 
-	// Set client info in device fingerprint
-	req.DeviceInfo.Platform = h.extractPlatform(userAgent)
+    // Ensure device info is non-nil and set client info
+    if req.DeviceInfo == nil {
+        req.DeviceInfo = &models.DeviceFingerprint{}
+    }
+    req.DeviceInfo.Platform = h.extractPlatform(userAgent)
 
 	// Check brute force protection
 	if err := h.bruteForceProtector.CheckAllowed(req.Email, clientIP); err != nil {

@@ -1,12 +1,14 @@
 package services
 
 import (
-	"context"
-	"fmt"
+    "context"
+    "fmt"
+    "time"
 
-	"github.com/smorting/backend/internal/auth"
-	"github.com/smorting/backend/internal/models"
-	"go.uber.org/zap"
+    "github.com/smorting/backend/internal/auth"
+    "github.com/smorting/backend/internal/models"
+    "go.uber.org/zap"
+    "golang.org/x/crypto/bcrypt"
 )
 
 // UserServiceAdapter adapts the existing auth service to implement UserService interface
@@ -19,9 +21,7 @@ func NewUserServiceAdapter(authService *auth.MongoDBService) *UserServiceAdapter
 }
 
 func (u *UserServiceAdapter) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	// For now, return a stub implementation
-	// TODO: Implement proper user retrieval from auth service
-	return nil, fmt.Errorf("GetUserByEmail not implemented yet")
+    return u.authService.GetUserByEmail(ctx, email)
 }
 
 func (u *UserServiceAdapter) GetUserByID(ctx context.Context, userID string) (*models.User, error) {
@@ -31,15 +31,13 @@ func (u *UserServiceAdapter) GetUserByID(ctx context.Context, userID string) (*m
 }
 
 func (u *UserServiceAdapter) VerifyPassword(password, hash string) error {
-	// For now, return a stub implementation
-	// TODO: Implement proper password verification
-	return fmt.Errorf("VerifyPassword not implemented yet")
+    return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
 func (u *UserServiceAdapter) UpdateLastLogin(ctx context.Context, userID string) error {
-	// For now, return a stub implementation
-	// TODO: Implement proper last login update
-	return fmt.Errorf("UpdateLastLogin not implemented yet")
+    // Best-effort no-op for now
+    _ = time.Now()
+    return nil
 }
 
 // StubOTPService provides a stub implementation of OTPService
@@ -51,17 +49,29 @@ func NewStubOTPService(logger *zap.Logger) *StubOTPService {
 	return &StubOTPService{logger: logger}
 }
 
+// CreateOTP implements OTP creation compatible with services.OTPService
+func (s *StubOTPService) CreateOTP(ctx context.Context, email, purpose string) error {
+    s.logger.Info("Stub OTP creation", zap.String("email", email), zap.String("purpose", purpose))
+    return nil
+}
+
 func (s *StubOTPService) GenerateOTP(ctx context.Context, userID, purpose string) (string, error) {
 	s.logger.Info("Stub OTP generation", zap.String("userID", userID), zap.String("purpose", purpose))
 	return "123456", nil // Stub OTP
 }
 
-func (s *StubOTPService) VerifyOTP(ctx context.Context, userID, otp, purpose string) error {
-	s.logger.Info("Stub OTP verification", zap.String("userID", userID), zap.String("otp", otp), zap.String("purpose", purpose))
+func (s *StubOTPService) VerifyOTP(ctx context.Context, email, otp string) error {
+    s.logger.Info("Stub OTP verification", zap.String("email", email), zap.String("otp", otp))
 	if otp == "123456" {
 		return nil // Accept stub OTP
 	}
 	return fmt.Errorf("invalid OTP")
+}
+
+// GetLatestOTPByEmail returns a stubbed OTP record for tests/dev
+func (s *StubOTPService) GetLatestOTPByEmail(ctx context.Context, email string) (*models.OTPRecord, error) {
+    s.logger.Info("Stub get latest OTP by email", zap.String("email", email))
+    return &models.OTPRecord{OTP: "123456"}, nil
 }
 
 // StubCaptchaService provides a stub implementation of CaptchaService

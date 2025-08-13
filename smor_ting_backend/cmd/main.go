@@ -293,18 +293,23 @@ func (a *App) initializeSecurityServices() error {
 	auditService := services.NewAuditService(a.mongoDB.GetDB(), a.logger.Logger)
 	a.auditService = auditService
 
-	// Initialize enhanced auth handler for biometric and advanced auth features
-	// Using stub implementations for development
-	stubEnhancedAuthService := services.NewStubEnhancedAuthService(a.logger.Logger)
-	stubUserService := services.NewUserServiceAdapter(a.authSvc)
-	stubOTPService := services.NewStubOTPService(a.logger.Logger)
-	stubCaptchaService := services.NewStubCaptchaService(a.logger.Logger)
+	// Initialize enhanced auth components backed by MongoDB for sessions/devices
+	sessionStore := services.NewMongoSessionStore(a.mongoDB.GetDB(), a.logger.Logger)
+	deviceStore := services.NewMongoDeviceStore(a.mongoDB.GetDB(), a.logger.Logger)
+	enhancedCore := services.NewEnhancedAuthService(a.jwtService, sessionStore, deviceStore, services.NewStubOTPService(a.logger.Logger), a.logger.Logger)
 
+	// Adapt core service to handler interfaces
+	adapter := services.NewEnhancedAuthServiceAdapter(enhancedCore, a.repository, a.authSvc, a.logger.Logger)
+	userService := services.NewUserServiceAdapter(a.authSvc)
+	captchaService := services.NewStubCaptchaService(a.logger.Logger)
+
+	// Wrap OTP service to match handler interface
+	otpSvc := &OtpAdapter{core: services.NewStubOTPService(a.logger.Logger)}
 	enhancedAuthHandler := handlers.NewEnhancedAuthHandler(
-		stubEnhancedAuthService,
-		stubUserService,
-		stubOTPService,
-		stubCaptchaService,
+		adapter,
+		userService,
+		otpSvc,
+		captchaService,
 		auditService,
 		a.logger.Logger,
 	)
@@ -452,7 +457,7 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	// Auth routes (no authentication required)
 	auth := api.Group("/auth")
 	auth.Post("/register", a.authHandler.Register)                  // Using enhanced auth handler for consistency
-	auth.Post("/login", a.enhancedAuthHandler.EnhancedLogin)       // Enhanced login to match mobile client expectations
+	auth.Post("/login", a.enhancedAuthHandler.EnhancedLogin)        // Enhanced login to match mobile client expectations
 	auth.Post("/validate", a.authHandler.ValidateToken)             // Using enhanced auth handler
 	auth.Post("/refresh", a.authHandler.RefreshToken)               // Legacy refresh endpoint
 	auth.Post("/refresh-token", a.enhancedAuthHandler.RefreshToken) // Mobile-expected enhanced refresh endpoint
