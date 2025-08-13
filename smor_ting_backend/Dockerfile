@@ -8,13 +8,13 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY smor_ting_backend/go.mod smor_ting_backend/go.sum ./
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY smor_ting_backend/ .
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build \
