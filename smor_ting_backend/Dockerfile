@@ -55,3 +55,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the application
 ENTRYPOINT ["./smor-ting-api"]# Last updated: Wed Aug 13 00:00:25 CDT 2025
+# Force trigger: 1755062747

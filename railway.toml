@@ -4,6 +4,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "smor_ting_backend/Dockerfile"
+watchPatterns = ["smor_ting_backend/**"]
 
 [deploy]
 startCommand = "./smor-ting-api"
