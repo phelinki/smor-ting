@@ -339,46 +339,54 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 const SizedBox(height: 32),
                 
                 // Username Field
-                CustomTextField(
-                  key: const ValueKey('login_email'),
-                  controller: _usernameController,
-                  labelText: 'Username or Email',
-                  hintText: 'Enter your username or email',
-                  keyboardType: TextInputType.text,
-                  prefixIcon: Icons.person_outlined,
-                  suffixIcon: Tooltip(
-                    message: 'Username must be at least 6 characters. You can use your email address as your username.',
-                    child: const Icon(
-                      Icons.help_outline,
-                      color: AppTheme.gray,
-                      size: 20,
+                Semantics(
+                  label: 'login_email',
+                  textField: true,
+                  child: CustomTextField(
+                    key: const ValueKey('login_email'),
+                    controller: _usernameController,
+                    labelText: 'Username or Email',
+                    hintText: 'Enter your username or email',
+                    keyboardType: TextInputType.text,
+                    prefixIcon: Icons.person_outlined,
+                    suffixIcon: Tooltip(
+                      message: 'Username must be at least 6 characters. You can use your email address as your username.',
+                      child: const Icon(
+                        Icons.help_outline,
+                        color: AppTheme.gray,
+                        size: 20,
+                      ),
                     ),
+                    validator: _validateUsername,
                   ),
-                  validator: _validateUsername,
                 ),
                 
                 const SizedBox(height: 20),
                 
                 // Password Field
-                CustomTextField(
-                  key: const ValueKey('login_password'),
-                  controller: _passwordController,
-                  labelText: 'Password',
-                  hintText: 'Enter your password',
-                  obscureText: !_isPasswordVisible,
-                  prefixIcon: Icons.lock_outlined,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                      color: AppTheme.gray,
+                Semantics(
+                  label: 'login_password',
+                  textField: true,
+                  child: CustomTextField(
+                    key: const ValueKey('login_password'),
+                    controller: _passwordController,
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    obscureText: !_isPasswordVisible,
+                    prefixIcon: Icons.lock_outlined,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        color: AppTheme.gray,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
+                    validator: _validatePassword,
                   ),
-                  validator: _validatePassword,
                 ),
                 
                 const SizedBox(height: 16),
@@ -420,9 +428,12 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                 // Sign In Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    key: const ValueKey('login_submit'),
-                    onPressed: _isLoading ? null : _handleLogin,
+                  child: Semantics(
+                    label: 'login_submit',
+                    button: true,
+                    child: ElevatedButton(
+                      key: const ValueKey('login_submit'),
+                      onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryRed,
                       foregroundColor: AppTheme.white,
@@ -431,22 +442,23 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
-                            ),
-                          )
-                        : const Text(
-                            'Sign In',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.white),
+                                ),
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                    ),
                   ),
                 ),
                 

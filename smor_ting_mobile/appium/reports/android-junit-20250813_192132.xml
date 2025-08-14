@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="5" failures="0" skipped="0" tests="5" time="858.923" timestamp="2025-08-13T19:21:32.726052" hostname="MacBook-Air-3.local"><testcase classname="tests.auth.test_login.TestLogin" name="test_successful_login" time="239.032"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+tests/base_test.py:218: in wait_for_element_to_be_clickable
+    return self.wait_for_element_clickable(locator, timeout)
+tests/base_test.py:208: in wait_for_element_clickable
+    element = WebDriverWait(self.driver, timeout).until(
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_nonexistent_email" time="235.089"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+tests/base_test.py:218: in wait_for_element_to_be_clickable
+    return self.wait_for_element_clickable(locator, timeout)
+tests/base_test.py:208: in wait_for_element_clickable
+    element = WebDriverWait(self.driver, timeout).until(
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:105: in until
+    raise TimeoutException(message, screen, stacktrace)
+E   selenium.common.exceptions.TimeoutException: Message: 
+E   Stacktrace:
+E   NoSuchElementError: An element could not be located on the page using the given search parameters.
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:86:11)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_wrong_password" time="74.256"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+tests/base_test.py:218: in wait_for_element_to_be_clickable
+    return self.wait_for_element_clickable(locator, timeout)
+tests/base_test.py:208: in wait_for_element_clickable
+    element = WebDriverWait(self.driver, timeout).until(
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:96: in until
+    value = method(self._driver)
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/expected_conditions.py:363: in _predicate
+    target = driver.find_element(*target)  # grab element at locator
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/webdriver.py:384: in find_element
+    return self.execute(RemoteCommand.FIND_ELEMENT, {'using': by, 'value': value})['value']
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/errorhandler.py:125: in check_response
+    raise exception_class(msg=message, stacktrace=format_stacktrace(stacktrace))
+E   selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: 'POST /element' cannot be proxied to UiAutomator2 server because the instrumentation process is not running (probably crashed). Check the server log and/or the logcat output for more details
+E   Stacktrace:
+E   UnknownError: An unknown server-side error occurred while processing the command. Original error: 'POST /element' cannot be proxied to UiAutomator2 server because the instrumentation process is not running (probably crashed). Check the server log and/or the logcat output for more details
+E       at UIA2Proxy.command (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/jsonwp-proxy/proxy.js:359:13)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.doFindElementOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/lib/commands/find.js:40:5)
+E       at doFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:47:17)
+E       at wrappedCondFn (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:141:14)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:219:20)
+E       at waitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:236:10)
+E       at AndroidUiautomator2Driver.implicitWaitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:143:12)
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:70:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_email" time="233.134"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+tests/base_test.py:218: in wait_for_element_to_be_clickable
+    return self.wait_for_element_clickable(locator, timeout)
+tests/base_test.py:208: in wait_for_element_clickable
+    element = WebDriverWait(self.driver, timeout).until(
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:96: in until
+    value = method(self._driver)
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/expected_conditions.py:363: in _predicate
+    target = driver.find_element(*target)  # grab element at locator
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/webdriver.py:384: in find_element
+    return self.execute(RemoteCommand.FIND_ELEMENT, {'using': by, 'value': value})['value']
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/errorhandler.py:125: in check_response
+    raise exception_class(msg=message, stacktrace=format_stacktrace(stacktrace))
+E   selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Could not proxy command to the remote server. Original error: socket hang up
+E   Stacktrace:
+E   UnknownError: An unknown server-side error occurred while processing the command. Original error: Could not proxy command to the remote server. Original error: socket hang up
+E       at UIA2Proxy.command (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/jsonwp-proxy/proxy.js:359:13)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.doFindElementOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/lib/commands/find.js:40:5)
+E       at doFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:47:17)
+E       at wrappedCondFn (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:141:14)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:219:20)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:229:14)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:229:14)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:229:14)
+E       at waitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:236:10)
+E       at AndroidUiautomator2Driver.implicitWaitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:143:12)
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:70:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase><testcase classname="tests.auth.test_login.TestLogin" name="test_login_with_empty_password" time="77.044"><error message="failed on setup with &quot;Exception: Failed to find landing page after multiple attempts&quot;">tests/auth/test_login.py:96: in _navigate_to_login
+    sign_in_button = self.wait_for_element_to_be_clickable(
+tests/base_test.py:218: in wait_for_element_to_be_clickable
+    return self.wait_for_element_clickable(locator, timeout)
+tests/base_test.py:208: in wait_for_element_clickable
+    element = WebDriverWait(self.driver, timeout).until(
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/wait.py:96: in until
+    value = method(self._driver)
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/support/expected_conditions.py:363: in _predicate
+    target = driver.find_element(*target)  # grab element at locator
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/webdriver.py:384: in find_element
+    return self.execute(RemoteCommand.FIND_ELEMENT, {'using': by, 'value': value})['value']
+../../../Library/Python/3.9/lib/python/site-packages/selenium/webdriver/remote/webdriver.py:347: in execute
+    self.error_handler.check_response(response)
+../../../Library/Python/3.9/lib/python/site-packages/appium/webdriver/errorhandler.py:125: in check_response
+    raise exception_class(msg=message, stacktrace=format_stacktrace(stacktrace))
+E   selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: 'POST /element' cannot be proxied to UiAutomator2 server because the instrumentation process is not running (probably crashed). Check the server log and/or the logcat output for more details
+E   Stacktrace:
+E   UnknownError: An unknown server-side error occurred while processing the command. Original error: 'POST /element' cannot be proxied to UiAutomator2 server because the instrumentation process is not running (probably crashed). Check the server log and/or the logcat output for more details
+E       at UIA2Proxy.command (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/jsonwp-proxy/proxy.js:359:13)
+E       at processTicksAndRejections (node:internal/process/task_queues:105:5)
+E       at AndroidUiautomator2Driver.doFindElementOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/lib/commands/find.js:40:5)
+E       at doFind (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:47:17)
+E       at wrappedCondFn (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:141:14)
+E       at spin (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:219:20)
+E       at waitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/asyncbox/lib/asyncbox.js:236:10)
+E       at AndroidUiautomator2Driver.implicitWaitForCondition (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/timeout.ts:143:12)
+E       at AndroidUiautomator2Driver.findElOrEls (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/appium-android-driver/lib/commands/find.ts:70:5)
+E       at AndroidUiautomator2Driver.findElOrElsWithProcessing (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+E       at AndroidUiautomator2Driver.findElement (/Users/kaleewou/smor-ting/smor_ting_mobile/appium/node_modules/appium-uiautomator2-driver/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+
+During handling of the above exception, another exception occurred:
+tests/auth/test_login.py:30: in setup_method
+    self._navigate_to_login()
+tests/auth/test_login.py:102: in _navigate_to_login
+    raise Exception("Failed to find landing page after multiple attempts")
+E   Exception: Failed to find landing page after multiple attempts</error></testcase></testsuite></testsuites>

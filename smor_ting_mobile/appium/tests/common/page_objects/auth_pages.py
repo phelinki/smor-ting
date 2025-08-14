@@ -31,6 +31,10 @@ class SplashPage(BasePage):
 class LandingPage(BasePage):
     """Landing screen shown after splash, with Sign In / Register actions"""
 
+    # Flutter keys for primary actions
+    SIGN_IN_FLUTTER_KEY = "landing_sign_in"
+    REGISTER_FLUTTER_KEY = "landing_register"
+
     SIGN_IN_BUTTON = (
         AppiumBy.ACCESSIBILITY_ID,
         "landing_sign_in",
@@ -50,13 +54,21 @@ class LandingPage(BasePage):
     )
 
     def goto_login(self):
-        locator = self.choose_locator(self.SIGN_IN_BUTTON, self.SIGN_IN_FALLBACK)
-        self.tap(locator)
+        # Prefer Flutter key first for reliability, then fallback to native locators
+        try:
+            self.tap_flutter_first(self.SIGN_IN_FLUTTER_KEY, self.SIGN_IN_FALLBACK)
+        except Exception:
+            locator = self.choose_locator(self.SIGN_IN_BUTTON, self.SIGN_IN_FALLBACK)
+            self.tap(locator)
         return PageFactory.get_login_page(self.driver)
 
     def goto_register(self):
-        locator = self.choose_locator(self.REGISTER_BUTTON, self.REGISTER_FALLBACK)
-        self.tap(locator)
+        # Prefer Flutter key first for reliability, then fallback to native locators
+        try:
+            self.tap_flutter_first(self.REGISTER_FLUTTER_KEY, self.REGISTER_FALLBACK)
+        except Exception:
+            locator = self.choose_locator(self.REGISTER_BUTTON, self.REGISTER_FALLBACK)
+            self.tap(locator)
         return PageFactory.get_registration_page(self.driver)
 
 

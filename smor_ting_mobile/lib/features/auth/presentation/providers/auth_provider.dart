@@ -20,12 +20,9 @@ class AuthNotifier extends _$AuthNotifier {
       final request = LoginRequest(email: email, password: password);
       final response = await apiService.login(request);
       
-      if (response.requiresOTP) {
-        state = AuthState.requiresOTP(email: email, user: response.user);
-      } else {
-        apiService.setAuthToken(response.accessToken!);
-        state = AuthState.authenticated(response.user, response.accessToken!);
-      }
+      // OTP is disabled - always go directly to authenticated state
+      apiService.setAuthToken(response.accessToken!);
+      state = AuthState.authenticated(response.user, response.accessToken!);
     } catch (e) {
       state = AuthState.error(e.toString());
     }
@@ -54,12 +51,9 @@ class AuthNotifier extends _$AuthNotifier {
       
       final response = await apiService.register(request);
       
-      if (response.requiresOTP) {
-        state = AuthState.requiresOTP(email: email, user: response.user);
-      } else {
-        apiService.setAuthToken(response.accessToken!);
-        state = AuthState.authenticated(response.user, response.accessToken!);
-      }
+      // OTP is disabled - always go directly to authenticated state
+      apiService.setAuthToken(response.accessToken!);
+      state = AuthState.authenticated(response.user, response.accessToken!);
     } on EmailAlreadyExistsException catch (e) {
       print('🔴 AuthProvider: Caught EmailAlreadyExistsException with email: ${e.email}');
       state = AuthState.emailAlreadyExists(e.email);
@@ -71,27 +65,13 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> verifyOTP(String email, String otp) async {
-    state = const AuthState.loading();
-    
-    try {
-      final apiService = ref.read(apiServiceProvider);
-      final request = VerifyOTPRequest(email: email, otp: otp);
-      final response = await apiService.verifyOTP(request);
-      
-      apiService.setAuthToken(response.accessToken!);
-      state = AuthState.authenticated(response.user, response.accessToken!);
-    } catch (e) {
-      state = AuthState.error(e.toString());
-    }
+    // OTP functionality is disabled
+    throw UnsupportedError('OTP verification is disabled in this version of the app. Please login directly without OTP.');
   }
 
   Future<void> resendOTP(String email) async {
-    try {
-      final apiService = ref.read(apiServiceProvider);
-      await apiService.resendOTP(email);
-    } catch (e) {
-      state = AuthState.error(e.toString());
-    }
+    // OTP functionality is disabled
+    throw UnsupportedError('OTP resend is disabled in this version of the app. Please login directly without OTP.');
   }
 
   void logout() {

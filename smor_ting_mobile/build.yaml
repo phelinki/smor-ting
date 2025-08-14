@@ -1,0 +1,20 @@
+targets:
+  $default:
+    sources:
+      - lib/**
+      - pubspec.*
+      - $package$
+    builders:
+      source_gen:combining_builder:
+        generate_for:
+          - lib/**
+      json_serializable:json_serializable:
+        generate_for:
+          - lib/**
+      riverpod_generator:riverpod_generator:
+        generate_for:
+          - lib/**
+      retrofit_generator:retrofit_generator:
+        generate_for:
+          - lib/**
+

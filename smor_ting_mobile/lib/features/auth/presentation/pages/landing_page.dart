@@ -104,7 +104,12 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                 // Returning User Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: Semantics(
+                    label: 'landing_sign_in',
+                    button: true,
+                    container: true,
+                    excludeSemantics: true,
+                    child: ElevatedButton(
                     key: const ValueKey('landing_sign_in'),
                     onPressed: () {
                       context.go('/login');
@@ -118,11 +123,12 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                       ),
                       elevation: 4,
                     ),
-                    child: const Text(
-                      'Returning User',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                      child: const Text(
+                        'Returning User',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -133,7 +139,12 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                 // New User Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: Semantics(
+                    label: 'landing_register',
+                    button: true,
+                    container: true,
+                    excludeSemantics: true,
+                    child: ElevatedButton(
                     key: const ValueKey('landing_register'),
                     onPressed: () {
                       context.go('/register');
@@ -147,11 +158,12 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                       ),
                       elevation: 4,
                     ),
-                    child: const Text(
-                      'New User',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                      child: const Text(
+                        'New User',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
