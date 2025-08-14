@@ -31,10 +31,6 @@ README.md
 *.md
 docs/
 
-# Scripts (keep only production scripts)
-scripts/
-!scripts/deploy_production.sh
-
 # Keys (should be set as environment variables)
 keys/
 *.env
@@ -45,3 +41,12 @@ keys/
 **/reports/
 *.html
 *.xml
+
+# Keep important files for deployment detection
+!go.mod
+!go.sum
+!Dockerfile
+!cmd/
+!configs/
+!api/
+!internal/

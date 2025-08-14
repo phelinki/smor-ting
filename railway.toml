@@ -26,5 +26,7 @@ restartPolicyMaxRetries = 10
 PORT = { default = "8080" }
 ENV = { default = "production" }
 HOST = { default = "0.0.0.0" }
-# Updated: $(date +%s) - Fixed watch patterns permanently
-# This configuration ensures Railway detects ALL backend file changes
+# Updated: $(date +%s) - FINAL FIX: Removed conflicting configs
+# Removed: nixpacks.toml, smor_ting_backend/railway.json
+# Fixed: .railwayignore to not ignore critical files
+# This is the ONLY Railway configuration file
