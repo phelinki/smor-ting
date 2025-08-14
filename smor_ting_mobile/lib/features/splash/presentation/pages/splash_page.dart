@@ -221,7 +221,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
                       ),
                     )
                   else
-                    const Semantics(
+                    Semantics(
                       label: 'splash_loading',
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
