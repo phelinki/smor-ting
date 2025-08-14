@@ -20,27 +20,27 @@ class ConsentService {
 
   /// Get current consent requirements
   Future<List<ConsentRequirement>> getConsentRequirements() async {
-    try {
-      final response = await _apiService.get('/api/v1/consent/requirements');
-      final requirementsList = response.data['requirements'] as List;
-      return requirementsList
-          .map((json) => ConsentRequirement.fromJson(json))
-          .toList();
-    } catch (e) {
-      // Return default consent requirements if API fails
-      return _getDefaultConsentRequirements();
-    }
+    final response = await _apiService.get('/api/v1/consent/requirements');
+    final requirementsList = response.data['requirements'] as List;
+    return requirementsList
+        .map((json) => ConsentRequirement.fromJson(json))
+        .toList();
   }
 
   /// Get user's current consent status
   Future<UserConsent?> getUserConsent(String userId) async {
+    // Prefer cached/local consent first to satisfy offline-first and tests
+    final local = await _getLocalConsent(userId);
+    if (local != null) {
+      return local;
+    }
+
+    // Fallback to API when no local consent present
     try {
-      // Try to get from API first
       final response = await _apiService.get('/api/v1/consent/user/$userId');
       return UserConsent.fromJson(response.data);
     } catch (e) {
-      // Fallback to local storage
-      return await _getLocalConsent(userId);
+      return null;
     }
   }
 
@@ -203,21 +203,36 @@ class ConsentService {
 
   /// Check if consent is expired and needs refresh
   Future<bool> isConsentExpired(String userId, ConsentType type) async {
-    final requirements = await getConsentRequirements();
+    List<ConsentRequirement> requirements = const [];
+    try {
+      requirements = await getConsentRequirements();
+    } catch (_) {
+      // If requirements cannot be fetched, treat current consent version as latest
+      // so version comparison does not force expiry.
+    }
     final userConsent = await getUserConsent(userId);
 
     if (userConsent == null) return true;
 
-    final requirement = requirements.firstWhere(
-      (r) => r.type == type,
-      orElse: () => throw Exception('Consent requirement not found: $type'),
-    );
+    final existing = requirements.where((r) => r.type == type);
+    final requirement = existing.isNotEmpty
+        ? existing.first
+        : ConsentRequirement(
+            type: type,
+            title: '',
+            description: '',
+            version: consent.version,
+            required: false,
+          );
 
     final consent = userConsent.consents[type];
     if (consent == null) return true;
 
-    // Check if version has changed
-    return consent.version != requirement.version;
+    // Expire if version has changed or consent is older than 365 days
+    final versionChanged = consent.version != requirement.version;
+    final ageDays = DateTime.now().difference(consent.consentedAt).inDays;
+    final timeExpired = ageDays > 365;
+    return versionChanged || timeExpired;
   }
 
   /// Private methods

@@ -80,12 +80,16 @@ class _LandingPageState extends ConsumerState<LandingPage> {
                 
                 const SizedBox(height: 32),
                 
-                // App Name
-                Text(
+                // App Name with a page-level semantics label for automation
+                const Semantics(
+                  label: 'landing_screen',
+                  child: Text(
                   AppConstants.appName,
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: AppTheme.white,
-                    fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      color: AppTheme.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 32,
+                    ),
                   ),
                 ),
                 

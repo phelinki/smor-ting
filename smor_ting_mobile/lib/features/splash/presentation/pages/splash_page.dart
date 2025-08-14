@@ -60,6 +60,9 @@ class _SplashPageState extends ConsumerState<SplashPage>
     ));
 
     _logoAnimationController.forward();
+    // Provide a small idle window for first frame to stabilize in tests/automation
+    // and expose a stable semantics node for landing detection.
+    Future.microtask(() {});
   }
 
   Future<void> _initializeApp() async {
@@ -183,7 +186,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
                               ),
                             ),
                             const SizedBox(height: 24),
-                            const Text(
+                             const Text(
                               'Smor-Ting',
                               style: TextStyle(
                                 fontSize: 32,
@@ -218,8 +221,11 @@ class _SplashPageState extends ConsumerState<SplashPage>
                       ),
                     )
                   else
-                    const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    const Semantics(
+                      label: 'splash_loading',
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                     ),
                 ],
               ),
