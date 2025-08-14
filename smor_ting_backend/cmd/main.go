@@ -463,9 +463,9 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	auth.Post("/refresh-token", a.enhancedAuthHandler.RefreshToken) // Mobile-expected enhanced refresh endpoint
 	auth.Post("/revoke", a.authHandler.RevokeToken)                 // New revoke endpoint
 	auth.Get("/token-info", a.authHandler.GetTokenInfo)             // New token info endpoint
-	// OTP and password reset endpoints
-	auth.Post("/verify-otp", a.authHandler.VerifyOTP)
-	auth.Post("/resend-otp", a.authHandler.ResendOTP)
+	// EMAIL OTP ENDPOINTS DISABLED - Removed email OTP functionality
+	// auth.Post("/verify-otp", a.authHandler.VerifyOTP)
+	// auth.Post("/resend-otp", a.authHandler.ResendOTP)
 	auth.Post("/request-password-reset", a.authHandler.RequestPasswordReset)
 	auth.Post("/reset-password", a.authHandler.ResetPassword)
 	// Biometric authentication endpoint
@@ -476,8 +476,8 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	auth.Delete("/sessions/:id", authMiddleware.Authenticate(), a.enhancedAuthHandler.RevokeSession)
 	auth.Delete("/sessions/all", authMiddleware.Authenticate(), a.enhancedAuthHandler.RevokeAllSessions)
 
-	// Test-only endpoint to fetch latest OTP for an email (disabled in production unless explicitly enabled)
-	auth.Get("/test/get-latest-otp", a.authHandler.TestGetLatestOTP)
+	// EMAIL OTP TEST ENDPOINT DISABLED - Removed email OTP functionality 
+	// auth.Get("/test/get-latest-otp", a.authHandler.TestGetLatestOTP)
 
 	// Protected routes (authentication required)
 	// Apply authentication middleware to each route group individually

@@ -251,15 +251,12 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
         loading: () {},
         unauthenticated: () {},
         authenticated: (user, accessToken, sessionId, deviceTrusted, isRestoredSession, requiresVerification) {
-          if (requiresVerification == true) {
-            context.go('/verify-otp?email=${user.email}&fullName=${user.fullName}');
+          // EMAIL OTP REMOVED: Skip OTP verification, go directly to dashboard/home
+          final role = user.role;
+          if (role == UserRole.provider || role == UserRole.admin) {
+            context.go('/agent-dashboard');
           } else {
-            final role = user.role;
-            if (role == UserRole.provider || role == UserRole.admin) {
-              context.go('/agent-dashboard');
-            } else {
-              context.go('/home');
-            }
+            context.go('/home');
           }
         },
         requiresTwoFactor: (email, tempUser, deviceTrusted) {
@@ -298,7 +295,13 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
           );
         },
         requiresVerification: (user, email) {
-          context.go('/verify-otp?email=$email&fullName=${user.fullName}');
+          // EMAIL OTP REMOVED: Skip OTP verification, go directly to dashboard/home
+          final role = user.role;
+          if (role == UserRole.provider || role == UserRole.admin) {
+            context.go('/agent-dashboard');
+          } else {
+            context.go('/home');
+          }
         },
       );
     });

@@ -102,29 +102,9 @@ func (a *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
 		return nil, errors.New("invalid email or password")
 	}
 
-	// If email is not verified, send OTP
-	if !user.IsEmailVerified {
-		otp, err := a.generateOTP()
-		if err != nil {
-			return nil, err
-		}
-
-		err = a.saveOTP(ctx, user.Email, otp, "login")
-		if err != nil {
-			return nil, err
-		}
-
-		// Send OTP email
-		err = a.emailService.SendOTP(user.Email, otp, "login")
-		if err != nil {
-			fmt.Printf("Failed to send OTP email: %v\n", err)
-		}
-
-		return &models.AuthResponse{
-			User:        *user,
-			RequiresOTP: true,
-		}, nil
-	}
+	// EMAIL OTP REMOVED: All users can now login directly without email verification
+	// This removes the email OTP requirement that was blocking test users
+	// Future versions may implement different verification methods
 
 	// Generate tokens
 	accessToken, refreshToken, err := a.generateTokens(*user)

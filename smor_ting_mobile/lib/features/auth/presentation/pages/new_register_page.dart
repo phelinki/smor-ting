@@ -145,9 +145,8 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
         } else {
           context.go('/home');
         }
-      } else if (next is RequiresOTP) {
-        print('🔴 RegisterPage: OTP required, navigating to verify page');
-        context.go('/verify-otp?email=${next.email}&fullName=${next.user.fullName}');
+      // EMAIL OTP REMOVED: Skip OTP verification step
+      // Users go directly to dashboard/home after registration
       } else if (next is EmailAlreadyExists) {
         print('🔴 RegisterPage: Email already exists, showing custom error widget for email: ${next.email}');
         // Do nothing - the UI will show the custom error widget
