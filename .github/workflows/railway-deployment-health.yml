@@ -1,0 +1,112 @@
+name: Railway Deployment Health Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every 30 minutes to check deployment health
+    - cron: '*/30 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'smor_ting_backend/**'
+      - 'railway.toml'
+      - '.github/workflows/railway-deployment-health.yml'
+
+jobs:
+  railway-health-check:
+    runs-on: ubuntu-latest
+    name: 🩺 Railway Deployment Health Check
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🐹 Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        
+    - name: 📦 Install Railway CLI
+      run: |
+        npm install -g @railway/cli
+        
+    - name: 🔐 Authenticate Railway
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        if [ -z "$RAILWAY_TOKEN" ]; then
+          echo "⚠️ RAILWAY_TOKEN not set - skipping Railway operations"
+          exit 0
+        fi
+        echo "🔐 Railway authentication successful"
+        
+    - name: 🏗️ Build Monitoring Tool
+      run: |
+        cd ${{ github.workspace }}
+        go build -o railway_monitor ./scripts/railway_deployment_monitor.go
+        chmod +x railway_monitor
+        
+    - name: 🔍 Check Railway Configuration
+      run: |
+        echo "📋 Checking Railway configuration..."
+        if [ -f "railway.toml" ]; then
+          echo "✅ Found railway.toml"
+          echo "📄 Watch patterns:"
+          grep -A 10 "watchPatterns" railway.toml || echo "No watchPatterns found"
+        else
+          echo "❌ No railway.toml found"
+          exit 1
+        fi
+        
+    - name: 🩺 Health Check
+      run: |
+        echo "🩺 Performing health check..."
+        ./railway_monitor health || {
+          echo "❌ Health check failed, attempting recovery..."
+          ./railway_monitor redeploy
+          sleep 120
+          ./railway_monitor monitor
+        }
+        
+    - name: ✅ Verify Deployment Status
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        if [ -n "$RAILWAY_TOKEN" ]; then
+          echo "📊 Railway deployment status:"
+          railway status || echo "Could not get Railway status"
+          
+          echo "📋 Recent deployment logs:"
+          railway logs | tail -20 || echo "Could not get Railway logs"
+        fi
+        
+    - name: 🧪 Run Deployment Tests
+      run: |
+        cd smor_ting_backend
+        echo "🧪 Running deployment health tests..."
+        go test ./tests/deployment_health_test.go -v
+        go test ./tests/railway_fix_test.go -v
+        
+    - name: 📊 Report Results
+      if: always()
+      run: |
+        echo "📊 Deployment Health Check Complete"
+        echo "🔗 Railway URL: https://smor-ting-production.up.railway.app"
+        echo "🔗 Custom Domain: https://smor-ting.com"
+        
+        # Test both endpoints
+        echo "🧪 Testing endpoints..."
+        curl -f https://smor-ting-production.up.railway.app/health && echo "✅ Railway URL healthy" || echo "❌ Railway URL failed"
+        curl -f https://smor-ting.com/health && echo "✅ Custom domain healthy" || echo "❌ Custom domain failed"
+        
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: railway-health-check
+    if: failure()
+    steps:
+    - name: 🚨 Notify Deployment Failure
+      run: |
+        echo "🚨 Railway deployment health check failed!"
+        echo "This indicates a persistent deployment issue that needs immediate attention."
+        echo "Check the Railway dashboard and logs for details."
+        echo "Consider running: railway redeploy --force"
