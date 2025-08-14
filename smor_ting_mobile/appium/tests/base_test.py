@@ -129,6 +129,22 @@ class BaseTest:
             # Additional wait for app to stabilize
             time.sleep(2)
             
+            # Make startup deterministic: skip onboarding and ensure landing is reachable
+            try:
+                from .common.page_objects.auth_pages import PageFactory
+                splash = PageFactory.get_splash_page(self.driver)
+                splash.wait_for_splash_to_complete()
+                onboarding = PageFactory.get_onboarding_page(self.driver)
+                onboarding.skip_if_present()
+                landing = PageFactory.get_landing_page(self.driver)
+                if not landing.ensure_loaded(timeout=5):
+                    # Try once more after brief delay
+                    time.sleep(2)
+                    onboarding.skip_if_present()
+                    landing.ensure_loaded(timeout=5)
+            except Exception as e:
+                self.logger.warning(f"Deterministic startup sequence encountered an issue: {e}")
+
         except TimeoutException:
             self.logger.error("Timeout waiting for app to launch")
             raise

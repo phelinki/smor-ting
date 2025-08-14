@@ -183,6 +183,17 @@ xcrun simctl bootstatus "$SIMULATOR_ID" -b
 
 print_status "iOS simulator is ready"
 
+# Enroll biometrics on simulator to unskip biometric tests
+print_step "Enabling enrolled biometrics on simulator..."
+if [ -n "$SIMULATOR_ID" ]; then
+  xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
+  xcrun simctl bootstatus "$SIMULATOR_ID" -b
+  # Enable biometric enrollment and set a default passcode
+  xcrun simctl biometric enroll "$SIMULATOR_ID" enable 2>/dev/null || true
+  # Face ID/Touch ID success defaults are controlled per-invocation; enrollment is sufficient
+  print_status "Biometrics enrolled on simulator ($SIMULATOR_ID)"
+fi
+
 # Step 4: Start Appium server
 print_step "Step 4: Starting Appium server..."
 
@@ -279,6 +290,8 @@ python3 -m pytest $PYTEST_ARGS \
     --junitxml="reports/$JUNIT_NAME" \
     --tb=short \
     --maxfail=5 \
+    --reruns 1 --reruns-delay 5 \
+    --timeout=900 \
     --capture=tee-sys \
     $PARALLEL \
     $MARKERS

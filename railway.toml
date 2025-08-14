@@ -4,7 +4,15 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "smor_ting_backend/Dockerfile"
-watchPatterns = ["smor_ting_backend/**"]
+watchPatterns = [
+  "smor_ting_backend/**/*",
+  "smor_ting_backend/*",
+  "smor_ting_backend/cmd/**/*",
+  "smor_ting_backend/configs/**/*",
+  "smor_ting_backend/Dockerfile",
+  "smor_ting_backend/go.mod",
+  "smor_ting_backend/go.sum"
+]
 
 [deploy]
 startCommand = "./smor-ting-api"
@@ -18,4 +26,5 @@ restartPolicyMaxRetries = 10
 PORT = { default = "8080" }
 ENV = { default = "production" }
 HOST = { default = "0.0.0.0" }
-# Updated: 1755062567
+# Updated: $(date +%s) - Fixed watch patterns permanently
+# This configuration ensures Railway detects ALL backend file changes

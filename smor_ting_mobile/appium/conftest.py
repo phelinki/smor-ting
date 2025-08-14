@@ -17,6 +17,7 @@ sys.path.insert(0, str(project_root))
 from config.appium_config import get_config, validate_config
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
+from appium.options.ios import XCUITestOptions
 
 
 def pytest_addoption(parser):
@@ -198,23 +199,21 @@ def driver(test_config):
         pytest.skip("Invalid Appium configuration")
 
     capabilities = test_config.get_capabilities()
-    automation_name = capabilities.get("automationName", "UiAutomator2")
-    
-    # Create appropriate options based on automation type
-    if automation_name == "Flutter":
-        # For Flutter Driver, we need to use generic options
-        from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-        options = None
-        caps = capabilities
-    else:
-        # Use UiAutomator2Options for traditional Android automation
+    platform_name = capabilities.get("platformName", "Android").lower()
+    options = None
+    caps = None
+    if platform_name == "android":
         options = UiAutomator2Options()
         options.load_capabilities(capabilities)
-        caps = None
+    elif platform_name == "ios":
+        options = XCUITestOptions()
+        options.load_capabilities(capabilities)
+    else:
+        caps = capabilities
 
     drv = None
     try:
-        if options:
+        if options is not None:
             drv = webdriver.Remote(
                 command_executor=test_config.appium_server_url,
                 options=options,

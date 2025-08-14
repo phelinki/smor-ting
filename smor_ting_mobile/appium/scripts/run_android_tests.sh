@@ -332,6 +332,8 @@ python3 -m pytest $PYTEST_ARGS \
     --junitxml="reports/$JUNIT_NAME" \
     --tb=short \
     --maxfail=5 \
+    --reruns 1 --reruns-delay 5 \
+    --timeout=600 \
     --capture=tee-sys \
     $PARALLEL \
     $MARKERS

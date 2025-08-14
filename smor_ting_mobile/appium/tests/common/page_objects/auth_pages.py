@@ -9,6 +9,56 @@ from appium.webdriver.common.appiumby import AppiumBy
 from .base_page import BasePage
 
 
+class OnboardingPage(BasePage):
+    """Handle onboarding/tutorial/permission screens to make startup deterministic."""
+
+    # Common onboarding actions
+    SKIP_BUTTONS = [
+        (AppiumBy.ACCESSIBILITY_ID, "skip"),
+        (AppiumBy.XPATH, "//*[contains(@text, 'Skip') or contains(@label, 'Skip') or contains(@name, 'Skip')]")
+    ]
+    NEXT_BUTTONS = [
+        (AppiumBy.ACCESSIBILITY_ID, "next"),
+        (AppiumBy.XPATH, "//*[contains(@text, 'Next') or contains(@label, 'Next') or contains(@name, 'Next')]")
+    ]
+    GET_STARTED_BUTTONS = [
+        (AppiumBy.ACCESSIBILITY_ID, "get_started"),
+        (AppiumBy.XPATH, "//*[contains(@text, 'Get Started') or contains(@label, 'Get Started') or contains(@name, 'Get Started') or contains(@text, 'Start')]")
+    ]
+
+    # Common permission prompts
+    ALLOW_BUTTONS = [
+        (AppiumBy.XPATH, "//*[contains(@text, 'Allow') or contains(@label, 'Allow') or contains(@name, 'Allow') or contains(@text, 'While using the app')]")
+    ]
+
+    def _tap_first_present(self, candidates: list, timeout_each: int = 2) -> bool:
+        for locator in candidates:
+            if self.is_element_present(locator, timeout=timeout_each):
+                try:
+                    self.tap(locator, timeout=timeout_each)
+                    return True
+                except Exception:
+                    continue
+        return False
+
+    def skip_if_present(self, max_steps: int = 6):
+        """Attempt to skip onboarding/tutorial screens and dismiss permission prompts."""
+        for _ in range(max_steps):
+            progressed = False
+            progressed = (
+                self._tap_first_present(self.SKIP_BUTTONS) or
+                self._tap_first_present(self.GET_STARTED_BUTTONS)
+            )
+            if progressed:
+                continue
+            progressed = self._tap_first_present(self.NEXT_BUTTONS)
+            if progressed:
+                continue
+            progressed = self._tap_first_present(self.ALLOW_BUTTONS)
+            if not progressed:
+                break
+
+
 class SplashPage(BasePage):
     """Page object for the splash screen"""
     
@@ -52,6 +102,15 @@ class LandingPage(BasePage):
         AppiumBy.XPATH,
         "//*[self::XCUIElementTypeButton or self::android.widget.Button][contains(@name, 'Register') or contains(@label, 'Register') or contains(@text, 'Register') or contains(@text, 'Sign Up') or contains(@text, 'New User')]",
     )
+
+    def ensure_loaded(self, timeout: int = 10) -> bool:
+        """Ensure landing page is loaded and actionable."""
+        try:
+            locator = self.choose_locator(self.SIGN_IN_BUTTON, self.SIGN_IN_FALLBACK)
+            button = self.wait_for_element_visible(locator, timeout)
+            return button.is_enabled()
+        except Exception:
+            return False
 
     def goto_login(self):
         # Prefer Flutter key first for reliability, then fallback to native locators
@@ -570,6 +629,11 @@ class PageFactory:
     @staticmethod
     def get_error_dialog(driver) -> ErrorDialog:
         return ErrorDialog(driver)
+
+    @staticmethod
+    def get_onboarding_page(driver):
+        from .auth_pages import OnboardingPage  # Local import to avoid early reference
+        return OnboardingPage(driver)
 
     @staticmethod
     def get_otp_page(driver):

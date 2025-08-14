@@ -15,7 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from ..base_test import BaseTest
-from ..common.page_objects.page_factory import PageFactory
+from ..common.page_objects import PageFactory
 
 
 class TestNavigationHelper(BaseTest):
