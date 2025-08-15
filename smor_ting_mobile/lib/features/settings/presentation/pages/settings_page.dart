@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../../../../core/services/enhanced_auth_service.dart';
 import '../../../../core/models/user.dart';
-import '../../../auth/presentation/providers/enhanced_auth_provider.dart';
-import '../widgets/biometric_settings_widget.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../widgets/simple_biometric_settings_widget.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -95,13 +94,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             // Biometric Authentication Section
             Consumer(
               builder: (context, ref, child) {
-                final authState = ref.watch(enhancedAuthNotifierProvider);
-                return authState.maybeWhen(
-                  authenticated: (user, _, __, ___, ____, _____) {
-                    return BiometricSettingsWidget(userEmail: user.email);
-                  },
-                  orElse: () => const SizedBox.shrink(),
-                ) ?? const SizedBox.shrink();
+                final authState = ref.watch(authNotifierProvider);
+                return switch (authState) {
+                  Authenticated(user: final user, accessToken: _) => SimpleBiometricSettingsWidget(userEmail: user.email),
+                  _ => const SizedBox.shrink(),
+                };
               },
             ),
 

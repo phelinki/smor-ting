@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../../core/models/user.dart';
 import '../../auth/presentation/pages/landing_page.dart';
-import '../../auth/presentation/pages/new_login_page.dart';
+import '../../auth/presentation/pages/simple_login_page.dart';
 import '../../auth/presentation/pages/new_register_page.dart';
 
 import '../../auth/presentation/pages/forgot_password_page.dart';
@@ -79,7 +79,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const NewLoginPage(),
+        builder: (context, state) => const SimpleLoginPage(),
       ),
       GoRoute(
         path: '/forgot-password',
