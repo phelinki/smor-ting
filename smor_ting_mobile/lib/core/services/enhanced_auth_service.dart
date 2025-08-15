@@ -101,23 +101,11 @@ class EnhancedAuthService {
     try {
       final sessionData = await _sessionManager.getCurrentSession();
       if (sessionData == null) {
-        // Try to restore from the new auth service secure storage
-        try {
-          final token = await _apiService.authService.getValidToken();
-          if (token.isNotEmpty) {
-            // Found valid token in new auth service storage but no session data
-            // This means the session manager data might be corrupted/missing
-            // For now, clear everything and let user re-login
-            await _sessionManager.clearSession();
-          }
-        } catch (e) {
-          // No valid tokens found, that's ok
-        }
         return null;
       }
 
-      // Check if session is still valid
-      if (DateTime.now().isAfter(sessionData.tokenExpiresAt)) {
+      // Check if session is still valid - use needsRefresh instead of direct comparison
+      if (sessionData.needsRefresh) {
         // Try to refresh token
         final refreshResult = await _refreshToken();
         if (refreshResult != null) {
@@ -132,18 +120,13 @@ class EnhancedAuthService {
           }
         }
         
-        // Session is invalid and refresh failed - already cleared by refresh method
+        // Session is invalid and refresh failed
+        await _sessionManager.clearSession();
         return null;
       }
 
       // Session is still valid
       _apiService.setAuthToken(sessionData.accessToken);
-      // Also update the cached token in AuthService
-      try {
-        _apiService.authService.setCachedAccessToken(sessionData.accessToken);
-      } catch (e) {
-        // Ignore if not available
-      }
       return EnhancedAuthResult(
         success: true,
         user: sessionData.user,

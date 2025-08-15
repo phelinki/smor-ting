@@ -8,7 +8,7 @@ import '../models/kyc.dart';
 import '../exceptions/auth_exceptions.dart';
 import 'device_fingerprint_service.dart';
 import '../../services/auth_service.dart';
-import '../../services/dio_interceptor.dart';
+import '../interceptors/auth_interceptor.dart';
 import 'session_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
