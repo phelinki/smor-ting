@@ -2,14 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
-import '../models/enhanced_auth_models.dart';
 import '../constants/api_config.dart';
 import '../models/kyc.dart';
 import '../exceptions/auth_exceptions.dart';
-import 'device_fingerprint_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/dio_interceptor.dart';
-import 'session_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
@@ -19,7 +16,7 @@ class ApiService {
 
   bool get loggingEnabled => _loggingEnabled;
 
-  ApiService({String? baseUrl, bool? enableLogging, SessionManager? sessionManager}) : _loggingEnabled = enableLogging ?? !kReleaseMode {
+  ApiService({String? baseUrl, bool? enableLogging}) : _loggingEnabled = enableLogging ?? !kReleaseMode {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl ?? ApiConfig.apiBaseUrl,
       connectTimeout: Duration(seconds: ApiConfig.connectTimeoutSeconds),
@@ -73,15 +70,7 @@ class ApiService {
     }
   }
 
-  // Enhanced authentication endpoints
-  Future<Map<String, dynamic>> enhancedLogin(EnhancedLoginRequest request) async {
-    try {
-      final response = await _dio.post('/auth/login', data: request.toJson());
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
+  // Basic authentication endpoints
 
   // CRITICAL: Make refresh token endpoint bypass all auth logic
   Future<Map<String, dynamic>> refreshToken(String refreshToken, String sessionId) async {
@@ -139,18 +128,7 @@ class ApiService {
     }
   }
 
-  Future<EnhancedAuthResult> biometricLogin(String email, String sessionId, DeviceFingerprint deviceInfo) async {
-    try {
-      final response = await _dio.post('/auth/biometric-login', data: {
-        'email': email,
-        'session_id': sessionId,
-        'device_info': deviceInfo.toJson(),
-      });
-      return EnhancedAuthResult.fromResponse(response.data);
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
+  // Biometric login removed - using simple auth only
 
   Future<AuthResponse> login(LoginRequest request) async {
     try {
