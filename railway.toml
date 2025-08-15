@@ -1,0 +1,5 @@
+# Empty railway.toml - use Railway dashboard configuration instead
+# This file intentionally left minimal to enable dashboard configuration
+
+[build]
+# Empty - Railway will use dashboard settings
