@@ -23,6 +23,9 @@ class EnhancedAuthService {
   final ApiService _apiService;
   final SessionManager _sessionManager;
   final DeviceFingerprintService _deviceService;
+  
+  // Add this flag to prevent multiple simultaneous restore attempts
+  static bool _isRestoringSession = false;
   final FlutterSecureStorage _secureStorage;
   final LocalAuthentication _localAuth;
 
@@ -96,37 +99,37 @@ class EnhancedAuthService {
     }
   }
 
-  /// Restore session on app launch
+  /// Restore session on app launch - SIMPLIFIED VERSION
   Future<EnhancedAuthResult?> restoreSession() async {
+    // Prevent multiple simultaneous restore attempts
+    if (_isRestoringSession) {
+      print('Session restore already in progress, skipping');
+      return null;
+    }
+    
+    _isRestoringSession = true;
+    
     try {
       final sessionData = await _sessionManager.getCurrentSession();
       if (sessionData == null) {
+        print('No session data found');
         return null;
       }
 
-      // Check if session is still valid - use needsRefresh instead of direct comparison
-      if (sessionData.needsRefresh) {
-        // Try to refresh token
-        final refreshResult = await _refreshToken();
-        if (refreshResult != null) {
-          return refreshResult;
-        }
-        
-        // If refresh fails, check if we can use biometric unlock
-        if (sessionData.rememberMe && sessionData.deviceTrusted) {
-          final biometricResult = await _tryBiometricUnlock(sessionData);
-          if (biometricResult != null) {
-            return biometricResult;
-          }
-        }
-        
-        // Session is invalid and refresh failed
+      // CRITICAL: Only check expiry, don't call any refresh methods
+      final now = DateTime.now();
+      final isExpired = now.isAfter(sessionData.tokenExpiresAt);
+      
+      if (isExpired) {
+        print('Session expired, clearing data');
         await _sessionManager.clearSession();
         return null;
       }
 
-      // Session is still valid
+      // Session is valid, just set the token and return
       _apiService.setAuthToken(sessionData.accessToken);
+      print('Session restored successfully');
+      
       return EnhancedAuthResult(
         success: true,
         user: sessionData.user,
@@ -136,10 +139,13 @@ class EnhancedAuthService {
         deviceTrusted: sessionData.deviceTrusted,
         isRestoredSession: true,
       );
+      
     } catch (e) {
-      // Clear corrupted session data
+      print('Error restoring session: $e');
       await _sessionManager.clearSession();
       return null;
+    } finally {
+      _isRestoringSession = false;
     }
   }
 

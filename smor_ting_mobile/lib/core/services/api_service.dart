@@ -8,7 +8,7 @@ import '../models/kyc.dart';
 import '../exceptions/auth_exceptions.dart';
 import 'device_fingerprint_service.dart';
 import '../../services/auth_service.dart';
-import '../interceptors/auth_interceptor.dart';
+import '../../services/dio_interceptor.dart';
 import 'session_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -27,17 +27,17 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'SmorTing-Mobile/${ApiConfig.environmentName}',
+        // REMOVE: Don't set Authorization here globally
       },
     ));
 
-    // Initialize AuthService for token refresh
+    // Initialize AuthService
     final secureStorage = const FlutterSecureStorage();
     _authService = AuthService(
       apiService: this,
       secureStorage: secureStorage,
     );
 
-    // Add interceptors for logging and error handling
     if (_loggingEnabled) {
       _dio.interceptors.add(LogInterceptor(
         requestBody: true,
@@ -46,30 +46,18 @@ class ApiService {
       ));
     }
 
-    // Add custom auth interceptor to handle 401 errors and prevent infinite loops
+    // CRITICAL: Add auth interceptor BEFORE error interceptor
     _dio.interceptors.add(AuthInterceptor(_authService));
-
-    // Add general error interceptor
-    _dio.interceptors.add(InterceptorsWrapper(
-      onError: (error, handler) {
-        print('API Error: ${error.message}');
-        handler.next(error);
-      },
-    ));
   }
 
-  // Set authorization token
+  // MODIFIED: Don't set global headers, let interceptor handle it
   void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
-    // Also update cached token
-    _authService.setCachedAccessToken(token);
+    // Remove this method or make it do nothing
+    // The interceptor will handle adding auth headers per request
   }
 
-  // Clear authorization token
   void clearAuthToken() {
-    _dio.options.headers.remove('Authorization');
-    // Also clear cached token
-    _authService.setCachedAccessToken(null);
+    // Remove this method or make it do nothing
   }
 
   // Get auth service for token management
@@ -95,9 +83,28 @@ class ApiService {
     }
   }
 
+  // CRITICAL: Make refresh token endpoint bypass all auth logic
   Future<Map<String, dynamic>> refreshToken(String refreshToken, String sessionId) async {
     try {
-      final response = await _dio.post('/auth/refresh-token', data: {
+      // Create a separate Dio instance for refresh requests to avoid interceptors
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: _dio.options.baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'SmorTing-Mobile/${ApiConfig.environmentName}',
+          // NO Authorization header here
+        },
+      ));
+      
+      if (_loggingEnabled) {
+        refreshDio.interceptors.add(LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          logPrint: (obj) => print('REFRESH: $obj'),
+        ));
+      }
+
+      final response = await refreshDio.post('/auth/refresh-token', data: {
         'refresh_token': refreshToken,
         'session_id': sessionId,
       });
