@@ -6,7 +6,7 @@ import '../constants/api_config.dart';
 import '../models/kyc.dart';
 import '../exceptions/auth_exceptions.dart';
 import '../../services/auth_service.dart';
-import '../../services/dio_interceptor.dart';
+import '../interceptors/auth_interceptor.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
@@ -78,6 +78,8 @@ class ApiService {
       // Create a separate Dio instance for refresh requests to avoid interceptors
       final refreshDio = Dio(BaseOptions(
         baseUrl: _dio.options.baseUrl,
+        connectTimeout: _dio.options.connectTimeout,
+        receiveTimeout: _dio.options.receiveTimeout,
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'SmorTing-Mobile/${ApiConfig.environmentName}',

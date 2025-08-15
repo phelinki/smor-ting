@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:dio/dio.dart';
-import 'package:smor_ting_mobile/services/dio_interceptor.dart';
+import 'package:smor_ting_mobile/core/interceptors/auth_interceptor.dart';
 import 'package:smor_ting_mobile/services/auth_service.dart';
 import 'package:smor_ting_mobile/core/services/api_service.dart';
 
