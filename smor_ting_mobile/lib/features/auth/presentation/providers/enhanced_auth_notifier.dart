@@ -80,24 +80,7 @@ class EnhancedAuthNotifier {
     }
   }
 
-  /// Enhanced OTP verification with role-based navigation
-  Future<void> verifyOTPWithNavigation({
-    required String email,
-    required String otp,
-    required GoRouter router,
-    bool requiresKyc = false,
-  }) async {
-    try {
-      // Perform OTP verification
-      await _authNotifier.verifyOTP(email, otp);
-      
-      // Handle post-OTP navigation
-      await _handlePostOTPNavigation(router, requiresKyc: requiresKyc);
-    } catch (e) {
-      // Error is already handled by the auth notifier
-      rethrow;
-    }
-  }
+
 
   /// Handle navigation after successful login
   Future<void> _handlePostLoginNavigation(GoRouter router) async {
@@ -149,27 +132,7 @@ class EnhancedAuthNotifier {
     // All users go directly to dashboard after registration
   }
 
-  /// Handle navigation after successful OTP verification
-  Future<void> _handlePostOTPNavigation(GoRouter router, {bool requiresKyc = false}) async {
-    final authState = _authNotifier.state;
-    
-    if (authState is Authenticated) {
-      final user = authState.user;
-      
-      final navigationResult = _navigationFlowService.getPostOTPVerificationDestination(
-        user,
-        requiresKyc: requiresKyc,
-      );
-      
-      if (navigationResult.clearHistory) {
-        router.go(navigationResult.fullUri);
-      } else if (navigationResult.shouldReplace) {
-        router.pushReplacement(navigationResult.fullUri);
-      } else {
-        router.push(navigationResult.fullUri);
-      }
-    }
-  }
+
 
   /// Handle logout with navigation
   Future<void> logoutWithNavigation(GoRouter router) async {

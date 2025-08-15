@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/enhanced_auth_service.dart';
-import '../../../auth/presentation/providers/enhanced_auth_provider.dart';
-import '../../../auth/presentation/widgets/biometric_quick_unlock.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
-/// Splash screen with session restoration and biometric quick unlock
+
+
+/// Splash screen with app initialization
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
@@ -22,8 +22,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   late Animation<double> _logoAnimation;
   late Animation<double> _fadeAnimation;
 
-  bool _showBiometricUnlock = false;
-  String? _userEmail;
+
 
   @override
   void initState() {
@@ -66,58 +65,27 @@ class _SplashPageState extends ConsumerState<SplashPage>
   }
 
   Future<void> _initializeApp() async {
-    // Give time for animations to start
+    // Wait for animations to start
     await Future.delayed(const Duration(milliseconds: 500));
-
+    
     try {
-      final authService = ref.read(enhancedAuthServiceProvider);
-      final restoredSession = await authService.restoreSession();
-
-      if (restoredSession != null && restoredSession.success && restoredSession.user != null) {
-        final user = restoredSession.user!;
-        _userEmail = user.email;
-
-        // Check if biometric unlock is available and enabled
-        final canUseBiometrics = await authService.canUseBiometrics();
-        final isBiometricEnabled = await authService.isBiometricEnabled(user.email);
-
-        if (canUseBiometrics && isBiometricEnabled) {
-          // Show biometric unlock option
-          setState(() {
-            _showBiometricUnlock = true;
-          });
-          _fadeAnimationController.forward();
-        } else {
-          // Go directly to home
-          _navigateToHome();
-        }
-      } else {
-        // No session, go to landing/login
-        _navigateToLanding();
-      }
+      // Clear any stored auth tokens to prevent refresh loop issues
+      // This ensures we start with a clean auth state after OTP removal
+      final apiService = ref.read(apiServiceProvider);
+      apiService.clearAuthToken();
+      
+      print('🔵 SplashPage: Cleared stored auth tokens');
+      
+      // Give the app time to stabilize and let GoRouter redirect to landing page
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      print('🔵 SplashPage: Initialization complete');
     } catch (e) {
-      // Error restoring session, go to landing
-      _navigateToLanding();
+      print('🔴 SplashPage: Error during initialization: $e');
     }
   }
 
-  void _navigateToHome() {
-    if (mounted) {
-      context.go('/home');
-    }
-  }
-
-  void _navigateToLanding() {
-    if (mounted) {
-      context.go('/landing');
-    }
-  }
-
-  void _navigateToLogin() {
-    if (mounted) {
-      context.go('/login');
-    }
-  }
+  // Navigation methods removed - GoRouter handles all navigation based on auth state
 
   @override
   void dispose() {
@@ -210,23 +178,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
                   const SizedBox(height: 60),
 
-                  // Biometric unlock or loading indicator
-                  if (_showBiometricUnlock && _userEmail != null)
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: BiometricQuickUnlock(
-                        userEmail: _userEmail!,
-                        onSuccess: _navigateToHome,
-                        onCancel: _navigateToLogin,
-                      ),
-                    )
-                  else
-                    Semantics(
-                      label: 'splash_loading',
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
+                  // Loading indicator
+                  Semantics(
+                    label: 'splash_loading',
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
+                  ),
                 ],
               ),
             ),

@@ -7,8 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
-// EMAIL OTP REMOVED: No longer need OTP verification page import
-// import 'otp_verification_page.dart';
+
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});

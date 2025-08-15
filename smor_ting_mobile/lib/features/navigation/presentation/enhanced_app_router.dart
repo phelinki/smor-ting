@@ -4,13 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/models/user.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../auth/presentation/providers/enhanced_auth_provider.dart';
 import '../domain/usecases/role_detection_service.dart';
 import '../domain/usecases/navigation_flow_service.dart';
 
 import '../../auth/presentation/pages/landing_page.dart';
 import '../../auth/presentation/pages/new_login_page.dart';
 import '../../auth/presentation/pages/new_register_page.dart';
-import '../../auth/presentation/pages/otp_verification_page.dart';
+
 import '../../auth/presentation/pages/forgot_password_page.dart';
 import '../../auth/presentation/pages/reset_password_page.dart';
 import '../../home/presentation/pages/home_page.dart';
@@ -37,7 +38,7 @@ import '../../../core/models/service.dart';
 
 /// Enhanced app router with role-based access control and proper navigation flows
 final enhancedAppRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authNotifierProvider);
+  final authState = ref.watch(enhancedAuthNotifierProvider);
   final roleDetectionService = RoleDetectionService();
   final navigationFlowService = NavigationFlowService();
   
@@ -89,17 +90,7 @@ final enhancedAppRouterProvider = Provider<GoRouter>((ref) {
           return ResetPasswordPage(email: email);
         },
       ),
-      GoRoute(
-        path: '/verify-otp',
-        builder: (context, state) {
-          final email = state.uri.queryParameters['email'] ?? '';
-          final fullName = state.uri.queryParameters['fullName'] ?? '';
-          return OTPVerificationPage(
-            email: email,
-            userFullName: fullName,
-          );
-        },
-      ),
+
       
       // Customer routes (requires customer role or higher)
       GoRoute(
@@ -234,13 +225,17 @@ final enhancedAppRouterProvider = Provider<GoRouter>((ref) {
 
 /// Handle authentication-based redirects with role validation
 String? _handleAuthRedirect(
-  AuthState authState,
+  EnhancedAuthState authState,
   String currentPath,
   RoleDetectionService roleDetectionService,
   NavigationFlowService navigationFlowService,
 ) {
   // Skip redirect during loading to avoid bouncing
-  if (authState is Loading) {
+  final isLoading = authState.maybeWhen(
+    loading: () => true,
+    orElse: () => false,
+  ) ?? false;
+  if (isLoading) {
     return null;
   }
   
@@ -260,56 +255,68 @@ String? _handleAuthRedirect(
       currentPath.startsWith('/reset-password');
       // EMAIL OTP REMOVED: /verify-otp is no longer a public route
   
-  // Handle different authentication states
-  switch (authState) {
-    case Initial():
-      // Unauthenticated user
+  // Handle different enhanced authentication states
+  return authState.when(
+    initial: () {
+      // Initial state - redirect to landing if not on public route
       if (!isPublicRoute) {
         return '/landing';
       }
       return null;
-      
-    case Loading():
-      // Authentication in progress - keep current route
+    },
+    loading: () {
+      // Authentication in progress - keep current route to avoid bouncing
       return null;
-      
-    case Authenticated():
-      final user = authState.user;
-      
+    },
+    unauthenticated: () {
+      // Unauthenticated user - redirect to landing if not on public route
+      if (!isPublicRoute) {
+        return '/landing';
+      }
+      return null;
+    },
+    authenticated: (user, accessToken, sessionId, deviceTrusted, isRestoredSession, requiresVerification) {
       // Check if user is on a public route after authentication
       if (isPublicRoute) {
-        // Redirect to appropriate dashboard
+        // Redirect to appropriate dashboard based on role
         return roleDetectionService.getDashboardRouteForRole(user.role);
       }
       
       // Check role-based access for protected routes
-      if (!isPublicRoute) {
-        final accessResult = roleDetectionService.validateUserAccess(user, currentPath);
-        
-        if (!accessResult.isAuthorized) {
-          // Redirect to appropriate dashboard or handling page
-          return accessResult.redirectRoute ?? 
-                 roleDetectionService.getDashboardRouteForRole(user.role);
-        }
+      final accessResult = roleDetectionService.validateUserAccess(user, currentPath);
+      
+      if (!accessResult.isAuthorized) {
+        // Redirect to appropriate dashboard or handling page
+        return accessResult.redirectRoute ?? 
+               roleDetectionService.getDashboardRouteForRole(user.role);
       }
       
       return null;
-      
-    case RequiresOTP():
-      // EMAIL OTP REMOVED: Skip OTP verification, go directly to dashboard
-      final user = authState.user;
-      return roleDetectionService.getDashboardRouteForRole(user.role);
-      
-    case Error():
-    case EmailAlreadyExists():
-    case PasswordResetEmailSent():
-    case PasswordResetSuccess():
-      // Handle error states - redirect to public routes
+    },
+    requiresTwoFactor: (email, tempUser, deviceTrusted) {
+      // 2FA DISABLED: Skip 2FA and go directly to dashboard
+      return roleDetectionService.getDashboardRouteForRole(tempUser.role);
+    },
+    requiresCaptcha: (email, remainingAttempts, lockoutInfo) {
+      // CAPTCHA DISABLED: Stay on current page (should not happen in dev)
+      return null;
+    },
+    lockedOut: (lockoutInfo, message) {
+      // LOCKOUT DISABLED: Stay on current page (should not happen in dev)
+      return null;
+    },
+    error: (message, canRetry) {
+      // On error, redirect to landing if not on public route
       if (!isPublicRoute) {
         return '/landing';
       }
       return null;
-  }
+    },
+                requiresVerification: (user, email) {
+              // EMAIL VERIFICATION DISABLED: Skip verification and go to dashboard
+              return roleDetectionService.getDashboardRouteForRole(user.role);
+            },
+  );
 }
 
 /// Custom dashboard page that redirects based on role (if needed)

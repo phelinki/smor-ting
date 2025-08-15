@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:local_auth/local_auth.dart';
+
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/user.dart';
@@ -175,26 +175,14 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
       final result = await authService.authenticateWithBiometrics(userEmail);
       
       if (result.success && result.user != null) {
-        // Update auth state
+        // Update auth state using the standard auth provider
         ref.read(authNotifierProvider.notifier).setAuthenticatedUser(
           result.user!,
           result.accessToken!,
         );
         
-        // Navigate to appropriate page based on user role
-        if (mounted) {
-          switch (result.user!.role) {
-            case UserRole.customer:
-              context.go('/home');
-              break;
-            case UserRole.provider:
-              context.go('/agent-home');
-              break;
-            case UserRole.admin:
-              context.go('/admin-home');
-              break;
-          }
-        }
+        // Navigation will be handled automatically by GoRouter based on auth state change
+        print('🔴 BiometricLogin: User authenticated via biometrics, role: ${result.user!.role}');
       } else {
         if (mounted) {
           MessageService.showError(
@@ -251,13 +239,9 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
         loading: () {},
         unauthenticated: () {},
         authenticated: (user, accessToken, sessionId, deviceTrusted, isRestoredSession, requiresVerification) {
-          // EMAIL OTP REMOVED: Skip OTP verification, go directly to dashboard/home
-          final role = user.role;
-          if (role == UserRole.provider || role == UserRole.admin) {
-            context.go('/agent-dashboard');
-          } else {
-            context.go('/home');
-          }
+          // EMAIL OTP REMOVED: Skip OTP verification
+          // Navigation will be handled automatically by GoRouter
+          print('🔴 LoginPage: User authenticated, role: ${user.role}');
         },
         requiresTwoFactor: (email, tempUser, deviceTrusted) {
           setState(() {
@@ -295,13 +279,9 @@ class _NewLoginPageState extends ConsumerState<NewLoginPage> {
           );
         },
         requiresVerification: (user, email) {
-          // EMAIL OTP REMOVED: Skip OTP verification, go directly to dashboard/home
-          final role = user.role;
-          if (role == UserRole.provider || role == UserRole.admin) {
-            context.go('/agent-dashboard');
-          } else {
-            context.go('/home');
-          }
+          // EMAIL OTP REMOVED: Skip OTP verification
+          // Navigation will be handled automatically by GoRouter
+          print('🔴 LoginPage: User requires verification, role: ${user.role}');
         },
       );
     });

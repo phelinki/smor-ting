@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/models/user.dart';
 import '../../../../core/services/message_service.dart';
-import '../providers/enhanced_auth_provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/verification_guard_service.dart';
 import 'verification_blocking_overlay.dart';
 import 'verification_required_banner.dart';
@@ -22,14 +22,15 @@ class VerificationGatedPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(enhancedAuthNotifierProvider);
+    final authState = ref.watch(authNotifierProvider);
 
-    return authState.maybeWhen(
-      authenticated: (user, _, __, ___, ____, _____) {
-        return _buildGatedContent(context, ref, user);
-      },
-      orElse: () => child, // If not authenticated, show child as-is
-    ) ?? child;
+    // If user is authenticated, check verification requirements
+    if (authState is Authenticated) {
+      return _buildGatedContent(context, ref, authState.user);
+    }
+
+    // If not authenticated, show child as-is
+    return child;
   }
 
   Widget _buildGatedContent(BuildContext context, WidgetRef ref, User user) {

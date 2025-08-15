@@ -48,7 +48,7 @@ void main() {
 
   testWidgets('ResetPasswordPage calls reset and shows success', (tester) async {
     // Arrange
-    when(() => mockApiService.resetPassword(any(), any(), any()))
+    when(() => mockApiService.resetPassword(any(), any()))
         .thenAnswer((_) async {});
 
     await tester.pumpWidget(ProviderScope(

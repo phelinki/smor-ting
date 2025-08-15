@@ -133,20 +133,14 @@ class _NewRegisterPageState extends ConsumerState<NewRegisterPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
-    // Listen to auth state changes for navigation
+    // Listen to auth state changes for UI feedback only
+    // Navigation is handled by GoRouter's redirect function
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
       print('🔴 RegisterPage: Auth state changed from ${previous.runtimeType} to ${next.runtimeType}');
       
       if (next is Authenticated) {
-        print('🔴 RegisterPage: User authenticated, navigating based on role: ${next.user.role}');
-        final role = next.user.role;
-        if (role == UserRole.provider || role == UserRole.admin) {
-          context.go('/agent-dashboard');
-        } else {
-          context.go('/home');
-        }
-      // EMAIL OTP REMOVED: Skip OTP verification step
-      // Users go directly to dashboard/home after registration
+        print('🔴 RegisterPage: User authenticated, role: ${next.user.role}');
+        // Navigation will be handled automatically by GoRouter
       } else if (next is EmailAlreadyExists) {
         print('🔴 RegisterPage: Email already exists, showing custom error widget for email: ${next.email}');
         // Do nothing - the UI will show the custom error widget

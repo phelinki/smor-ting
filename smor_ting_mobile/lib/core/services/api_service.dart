@@ -7,14 +7,19 @@ import '../constants/api_config.dart';
 import '../models/kyc.dart';
 import '../exceptions/auth_exceptions.dart';
 import 'device_fingerprint_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/dio_interceptor.dart';
+import 'session_manager.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   late final Dio _dio;
   final bool _loggingEnabled;
+  late final AuthService _authService;
 
   bool get loggingEnabled => _loggingEnabled;
 
-  ApiService({String? baseUrl, bool? enableLogging}) : _loggingEnabled = enableLogging ?? !kReleaseMode {
+  ApiService({String? baseUrl, bool? enableLogging, SessionManager? sessionManager}) : _loggingEnabled = enableLogging ?? !kReleaseMode {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl ?? ApiConfig.apiBaseUrl,
       connectTimeout: Duration(seconds: ApiConfig.connectTimeoutSeconds),
@@ -25,6 +30,13 @@ class ApiService {
       },
     ));
 
+    // Initialize AuthService for token refresh
+    final secureStorage = const FlutterSecureStorage();
+    _authService = AuthService(
+      apiService: this,
+      secureStorage: secureStorage,
+    );
+
     // Add interceptors for logging and error handling
     if (_loggingEnabled) {
       _dio.interceptors.add(LogInterceptor(
@@ -34,6 +46,10 @@ class ApiService {
       ));
     }
 
+    // Add custom auth interceptor to handle 401 errors and prevent infinite loops
+    _dio.interceptors.add(AuthInterceptor(_authService));
+
+    // Add general error interceptor
     _dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) {
         print('API Error: ${error.message}');
@@ -45,12 +61,19 @@ class ApiService {
   // Set authorization token
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
+    // Also update cached token
+    _authService.setCachedAccessToken(token);
   }
 
   // Clear authorization token
   void clearAuthToken() {
     _dio.options.headers.remove('Authorization');
+    // Also clear cached token
+    _authService.setCachedAccessToken(null);
   }
+
+  // Get auth service for token management
+  AuthService get authService => _authService;
 
   // Auth endpoints
   Future<AuthResponse> register(RegisterRequest request) async {
@@ -131,22 +154,7 @@ class ApiService {
     }
   }
 
-  Future<AuthResponse> verifyOTP(VerifyOTPRequest request) async {
-    try {
-      final response = await _dio.post('/auth/verify-otp', data: request.toJson());
-      return AuthResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
 
-  Future<void> resendOTP(String email) async {
-    try {
-      await _dio.post('/auth/resend-otp', data: {'email': email});
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
 
   // Forgot password
   Future<void> requestPasswordReset(String email) async {
@@ -157,11 +165,10 @@ class ApiService {
     }
   }
 
-  Future<void> resetPassword(String email, String otp, String newPassword) async {
+  Future<void> resetPassword(String email, String newPassword) async {
     try {
       await _dio.post('/auth/reset-password', data: {
         'email': email,
-        'otp': otp,
         'new_password': newPassword,
       });
     } on DioException catch (e) {

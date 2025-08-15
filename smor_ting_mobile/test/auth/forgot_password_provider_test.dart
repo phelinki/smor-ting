@@ -36,7 +36,7 @@ void main() {
 
   test('resetPassword sets state to PasswordResetSuccess', () async {
     // Arrange
-    when(() => mockApiService.resetPassword(any(), any(), any()))
+    when(() => mockApiService.resetPassword(any(), any()))
         .thenAnswer((_) async {});
 
     final container = ProviderContainer(overrides: [
@@ -76,7 +76,7 @@ void main() {
 
   test('handles error during password reset', () async {
     // Arrange
-    when(() => mockApiService.resetPassword(any(), any(), any()))
+    when(() => mockApiService.resetPassword(any(), any()))
         .thenThrow(Exception('Invalid OTP'));
 
     final container = ProviderContainer(overrides: [

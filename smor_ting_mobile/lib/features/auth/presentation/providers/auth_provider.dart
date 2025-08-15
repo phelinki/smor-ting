@@ -64,15 +64,7 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  Future<void> verifyOTP(String email, String otp) async {
-    // OTP functionality is disabled
-    throw UnsupportedError('OTP verification is disabled in this version of the app. Please login directly without OTP.');
-  }
 
-  Future<void> resendOTP(String email) async {
-    // OTP functionality is disabled
-    throw UnsupportedError('OTP resend is disabled in this version of the app. Please login directly without OTP.');
-  }
 
   void logout() {
     final apiService = ref.read(apiServiceProvider);
@@ -101,10 +93,10 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  Future<void> resetPassword(String email, String otp, String newPassword) async {
+  Future<void> resetPassword(String email, String newPassword) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.resetPassword(email, otp, newPassword);
+      await apiService.resetPassword(email, newPassword);
       state = const PasswordResetSuccess();
     } catch (e) {
       state = AuthState.error(e.toString());

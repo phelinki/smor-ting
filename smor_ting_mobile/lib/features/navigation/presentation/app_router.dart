@@ -6,7 +6,7 @@ import '../../../core/models/user.dart';
 import '../../auth/presentation/pages/landing_page.dart';
 import '../../auth/presentation/pages/new_login_page.dart';
 import '../../auth/presentation/pages/new_register_page.dart';
-import '../../auth/presentation/pages/otp_verification_page.dart';
+
 import '../../auth/presentation/pages/forgot_password_page.dart';
 import '../../auth/presentation/pages/reset_password_page.dart';
 import '../../home/presentation/pages/home_page.dart';
@@ -45,7 +45,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = state.matchedLocation == '/landing' || 
                          state.matchedLocation == '/login' || 
                          state.matchedLocation == '/register' ||
-                         state.matchedLocation == '/verify-otp' ||
                          state.matchedLocation == '/onboarding' ||
                          state.matchedLocation == '/agent-login';
       
@@ -97,17 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/register',
         builder: (context, state) => const NewRegisterPage(),
       ),
-      GoRoute(
-        path: '/verify-otp',
-        builder: (context, state) {
-          final email = state.uri.queryParameters['email'] ?? '';
-          final fullName = state.uri.queryParameters['fullName'] ?? '';
-          return OTPVerificationPage(
-            email: email,
-            userFullName: fullName,
-          );
-        },
-      ),
+
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomePage(),

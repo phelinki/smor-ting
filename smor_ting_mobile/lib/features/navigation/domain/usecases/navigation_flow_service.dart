@@ -32,17 +32,7 @@ class NavigationFlowService {
     return NavigationResult.replace(dashboardRoute, clearHistory: true);
   }
 
-  /// Get destination after OTP verification
-  NavigationResult getPostOTPVerificationDestination(User user, {bool requiresKyc = false}) {
-    // For providers who need KYC
-    if (user.role == UserRole.provider && requiresKyc) {
-      return NavigationResult.replace('/kyc', clearHistory: true);
-    }
 
-    // Navigate to appropriate dashboard
-    final dashboardRoute = _roleDetectionService.getDashboardRouteForRole(user.role);
-    return NavigationResult.replace(dashboardRoute, clearHistory: true);
-  }
 
   /// Get destination after KYC completion
   NavigationResult getPostKYCDestination(User user, {required bool kycSuccess}) {
@@ -220,7 +210,7 @@ class NavigationFlowService {
   /// Check if route is a modal/overlay route
   bool isModalRoute(String route) {
     const modalRoutes = [
-      '/verify-otp',
+
       '/forgot-password',
       '/reset-password',
     ];

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../models/user.dart';
 import '../models/enhanced_auth_models.dart';
 import 'api_service.dart';
@@ -23,6 +25,15 @@ class EnhancedAuthService {
   final DeviceFingerprintService _deviceService;
   final FlutterSecureStorage _secureStorage;
   final LocalAuthentication _localAuth;
+
+  // Debouncing mechanism for refresh tokens
+  Completer<EnhancedAuthResult?>? _refreshCompleter;
+  DateTime? _lastRefreshAttempt;
+  static const Duration _refreshDebounceThreshold = Duration(milliseconds: 500);
+  
+  // Error handling and retry mechanism
+  static const int _maxRetryAttempts = 3;
+  static const Duration _baseRetryDelay = Duration(milliseconds: 1000);
 
   EnhancedAuthService(
     this._apiService,
@@ -89,7 +100,21 @@ class EnhancedAuthService {
   Future<EnhancedAuthResult?> restoreSession() async {
     try {
       final sessionData = await _sessionManager.getCurrentSession();
-      if (sessionData == null) return null;
+      if (sessionData == null) {
+        // Try to restore from the new auth service secure storage
+        try {
+          final token = await _apiService.authService.getValidToken();
+          if (token.isNotEmpty) {
+            // Found valid token in new auth service storage but no session data
+            // This means the session manager data might be corrupted/missing
+            // For now, clear everything and let user re-login
+            await _sessionManager.clearSession();
+          }
+        } catch (e) {
+          // No valid tokens found, that's ok
+        }
+        return null;
+      }
 
       // Check if session is still valid
       if (DateTime.now().isAfter(sessionData.tokenExpiresAt)) {
@@ -107,13 +132,18 @@ class EnhancedAuthService {
           }
         }
         
-        // Clear invalid session
-        await _sessionManager.clearSession();
+        // Session is invalid and refresh failed - already cleared by refresh method
         return null;
       }
 
       // Session is still valid
       _apiService.setAuthToken(sessionData.accessToken);
+      // Also update the cached token in AuthService
+      try {
+        _apiService.authService.setCachedAccessToken(sessionData.accessToken);
+      } catch (e) {
+        // Ignore if not available
+      }
       return EnhancedAuthResult(
         success: true,
         user: sessionData.user,
@@ -130,50 +160,207 @@ class EnhancedAuthService {
     }
   }
 
-  /// Refresh authentication token
+  /// Refresh authentication token using the new cleaner auth service
   Future<EnhancedAuthResult?> _refreshToken() async {
     try {
+      // Use the new auth service which has proper infinite loop prevention
+      final newAccessToken = await _apiService.authService.refreshToken();
+      
+      // Get the updated session data
       final sessionData = await _sessionManager.getCurrentSession();
       if (sessionData == null) return null;
 
-      // Check if refresh token is expired
-      if (DateTime.now().isAfter(sessionData.refreshExpiresAt)) {
-        await _sessionManager.clearSession();
-        return null;
-      }
-
-      final response = await _apiService.refreshToken(
-        sessionData.refreshToken,
-        sessionData.sessionId,
+      return EnhancedAuthResult(
+        success: true,
+        user: sessionData.user,
+        accessToken: newAccessToken,
+        refreshToken: sessionData.refreshToken,
+        sessionId: sessionData.sessionId,
+        deviceTrusted: sessionData.deviceTrusted,
+        isRestoredSession: true,
       );
-
-      if (response['success'] == true) {
-        // Update stored session with new tokens
-        final updatedSession = sessionData.copyWith(
-          accessToken: response['access_token'],
-          refreshToken: response['refresh_token'],
-          tokenExpiresAt: DateTime.parse(response['token_expires_at']),
-          refreshExpiresAt: DateTime.parse(response['refresh_expires_at']),
-        );
-
-        await _sessionManager.storeSession(updatedSession);
-        _apiService.setAuthToken(updatedSession.accessToken);
-
-        return EnhancedAuthResult(
-          success: true,
-          user: updatedSession.user,
-          accessToken: updatedSession.accessToken,
-          refreshToken: updatedSession.refreshToken,
-          sessionId: updatedSession.sessionId,
-          deviceTrusted: updatedSession.deviceTrusted,
-          isRestoredSession: true,
-        );
-      }
-
-      return null;
     } catch (e) {
+      // Clear session on failure
+      await _sessionManager.clearSession();
       return null;
     }
+  }
+
+  /// Perform token refresh with retry logic and comprehensive error handling
+  Future<EnhancedAuthResult?> _performRefreshWithRetry() async {
+    int attemptCount = 0;
+    Exception? lastException;
+
+    while (attemptCount < _maxRetryAttempts) {
+      try {
+        final sessionData = await _sessionManager.getCurrentSession();
+        if (sessionData == null) return null;
+
+        // JWT VALIDATION: Validate refresh token before making API call
+        if (!_isValidJwtToken(sessionData.refreshToken)) {
+          await _sessionManager.clearSession();
+          return null;
+        }
+
+        // JWT VALIDATION: Check if refresh token is expired
+        if (DateTime.now().isAfter(sessionData.refreshExpiresAt)) {
+          await _sessionManager.clearSession();
+          return null;
+        }
+
+        // JWT VALIDATION: Additional JWT expiry check using decoder
+        if (_isJwtExpired(sessionData.refreshToken)) {
+          await _sessionManager.clearSession();
+          return null;
+        }
+
+        // Attempt token refresh
+        final response = await _apiService.refreshToken(
+          sessionData.refreshToken,
+          sessionData.sessionId,
+        );
+
+        // ERROR HANDLING: Validate response format
+        if (!_isValidRefreshResponse(response)) {
+          throw Exception('Invalid refresh response format');
+        }
+
+        if (response['success'] == true) {
+          // JWT VALIDATION: Validate new tokens before storing
+          final newAccessToken = response['access_token'] as String?;
+          final newRefreshToken = response['refresh_token'] as String?;
+          
+          if (newAccessToken == null || newRefreshToken == null ||
+              !_isValidJwtToken(newAccessToken) || !_isValidJwtToken(newRefreshToken)) {
+            throw Exception('Invalid JWT tokens in refresh response');
+          }
+
+          // Update stored session with new tokens
+          final updatedSession = sessionData.copyWith(
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+            tokenExpiresAt: DateTime.parse(response['token_expires_at']),
+            refreshExpiresAt: DateTime.parse(response['refresh_expires_at']),
+          );
+
+          await _sessionManager.storeSession(updatedSession);
+          _apiService.setAuthToken(updatedSession.accessToken);
+
+          return EnhancedAuthResult(
+            success: true,
+            user: updatedSession.user,
+            accessToken: updatedSession.accessToken,
+            refreshToken: updatedSession.refreshToken,
+            sessionId: updatedSession.sessionId,
+            deviceTrusted: updatedSession.deviceTrusted,
+            isRestoredSession: true,
+          );
+        } else {
+          // ERROR HANDLING: Server returned failure
+          throw Exception('Server rejected refresh request: ${response['message'] ?? 'Unknown error'}');
+        }
+      } catch (e) {
+        lastException = e is Exception ? e : Exception(e.toString());
+        attemptCount++;
+
+        // ERROR HANDLING: Don't retry on certain errors
+        if (_isNonRetryableError(e)) {
+          await _sessionManager.clearSession();
+          break;
+        }
+
+        // ERROR HANDLING: Exponential backoff for retries
+        if (attemptCount < _maxRetryAttempts) {
+          final delay = Duration(
+            milliseconds: _baseRetryDelay.inMilliseconds * (1 << (attemptCount - 1))
+          );
+          await Future.delayed(delay);
+        }
+      }
+    }
+
+    // ERROR HANDLING: All retries failed
+    if (lastException != null && _isSessionInvalidatingError(lastException)) {
+      await _sessionManager.clearSession();
+    }
+    
+    return null;
+  }
+
+  /// JWT VALIDATION: Check if a token has a valid JWT structure
+  bool _isValidJwtToken(String token) {
+    if (token.isEmpty) return false;
+    
+    try {
+      // JWT tokens should have 3 parts separated by dots
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      
+      // Try to decode the header and payload
+      final header = utf8.decode(base64Decode(_padBase64(parts[0])));
+      final payload = utf8.decode(base64Decode(_padBase64(parts[1])));
+      
+      // Basic validation - should be valid JSON
+      jsonDecode(header);
+      jsonDecode(payload);
+      
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// JWT VALIDATION: Check if JWT token is expired using decoder
+  bool _isJwtExpired(String token) {
+    try {
+      return JwtDecoder.isExpired(token);
+    } catch (e) {
+      // If we can't decode it, consider it expired
+      return true;
+    }
+  }
+
+  /// ERROR HANDLING: Validate refresh response structure
+  bool _isValidRefreshResponse(Map<String, dynamic> response) {
+    if (response['success'] == true) {
+      return response.containsKey('access_token') &&
+             response.containsKey('refresh_token') &&
+             response.containsKey('token_expires_at') &&
+             response.containsKey('refresh_expires_at') &&
+             response['access_token'] is String &&
+             response['refresh_token'] is String &&
+             response['token_expires_at'] is String &&
+             response['refresh_expires_at'] is String;
+    }
+    return response.containsKey('success');
+  }
+
+  /// ERROR HANDLING: Check if error should not be retried
+  bool _isNonRetryableError(dynamic error) {
+    final errorMessage = error.toString().toLowerCase();
+    return errorMessage.contains('invalid') ||
+           errorMessage.contains('expired') ||
+           errorMessage.contains('unauthorized') ||
+           errorMessage.contains('forbidden') ||
+           errorMessage.contains('malformed');
+  }
+
+  /// ERROR HANDLING: Check if error should invalidate session
+  bool _isSessionInvalidatingError(Exception error) {
+    final errorMessage = error.toString().toLowerCase();
+    return errorMessage.contains('invalid') ||
+           errorMessage.contains('expired') ||
+           errorMessage.contains('unauthorized') ||
+           errorMessage.contains('revoked');
+  }
+
+  /// Utility: Pad base64 string for proper decoding
+  String _padBase64(String base64) {
+    final missingPadding = 4 - (base64.length % 4);
+    if (missingPadding != 4) {
+      return base64 + ('=' * missingPadding);
+    }
+    return base64;
   }
 
   /// Biometric authentication for quick unlock

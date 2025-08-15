@@ -8,7 +8,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/models/user.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
-import 'otp_verification_page.dart';
+
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});

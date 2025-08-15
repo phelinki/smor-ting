@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
 class ResetPasswordPage extends ConsumerStatefulWidget {
@@ -14,14 +14,14 @@ class ResetPasswordPage extends ConsumerStatefulWidget {
 
 class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _otpController = TextEditingController();
+
   final _newPasswordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _loading = false;
 
   @override
   void dispose() {
-    _otpController.dispose();
+
     _newPasswordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -33,7 +33,6 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     try {
       await ref.read(authNotifierProvider.notifier).resetPassword(
         widget.email,
-        _otpController.text.trim(),
         _newPasswordController.text,
       );
       if (!mounted) return;
@@ -54,16 +53,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           key: _formKey,
           child: Column(
             children: [
-              Semantics(
-                label: 'reset_otp',
-                child: TextFormField(
-                  controller: _otpController,
-                  decoration: const InputDecoration(labelText: 'OTP Code'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => (v == null || v.length != 6) ? 'Enter 6-digit code' : null,
-                ),
-              ),
-              const SizedBox(height: 16),
+
               Semantics(
                 label: 'reset_new_password',
                 child: TextFormField(

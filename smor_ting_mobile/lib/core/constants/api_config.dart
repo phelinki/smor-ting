@@ -48,8 +48,7 @@ class ApiConfig {
   // API Endpoints
   static const String authRegister = '/auth/register';
   static const String authLogin = '/auth/login';
-  static const String authVerifyOTP = '/auth/verify-otp';
-  static const String authResendOTP = '/auth/resend-otp';
+
   
   static const String userProfile = '/users/profile';
   static const String userUpdateProfile = '/users/profile';
