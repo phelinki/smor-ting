@@ -20,12 +20,15 @@ class AuthInterceptor extends Interceptor {
     }
     
     try {
+      // Only try to get token if we're not refreshing and have stored credentials
       final token = await _authService.getValidToken();
-      options.headers['Authorization'] = 'Bearer $token';
+      if (token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
     } catch (e) {
-      // Token is invalid/expired, let the request proceed without auth
-      // The 401 response will trigger the error interceptor
-      print('Failed to get valid token: $e');
+      // No valid token available - continue without auth header
+      // This is normal for first-time users or expired sessions
+      print('No valid token available, proceeding without auth: $e');
     }
     
     return handler.next(options);
