@@ -7,10 +7,10 @@ class ApiConfig {
   static String get _devBaseUrl {
     if (Platform.isAndroid) {
       // Android emulator loopback
-      return 'http://10.0.2.2:8080';
+      return 'http://10.0.2.2:8088';
     }
     // iOS simulator / desktop
-    return 'http://127.0.0.1:8080';
+    return 'http://127.0.0.1:8088';
   }
   static const String _stagingBaseUrl = 'https://api.smor-ting.com';
   static const String _productionBaseUrl = 'https://smor-ting-production.up.railway.app';

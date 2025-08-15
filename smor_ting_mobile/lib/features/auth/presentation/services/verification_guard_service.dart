@@ -45,57 +45,61 @@ class VerificationGuardService {
   }) {
     final cleanRoute = route.split('?').first;
 
-    // Check if route requires full verification
-    if (_fullVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isEmailVerified) { // TODO: Add phone verification check when User model supports it
-        return VerificationRequirement(
-          required: true,
-          blocking: true,
-          emailRequired: !user.isEmailVerified,
-          phoneRequired: !user.isEmailVerified,
-          reason: 'This feature requires both email and phone verification for security.',
-        );
-      }
-    }
+    // EMAIL OTP REMOVED: Skip full verification requirements
+    // All routes are now accessible without email verification
+    // if (_fullVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
+    //   if (!user.isEmailVerified) {
+    //     return VerificationRequirement(
+    //       required: true,
+    //       blocking: true,
+    //       emailRequired: !user.isEmailVerified,
+    //       phoneRequired: !user.isEmailVerified,
+    //       reason: 'This feature requires both email and phone verification for security.',
+    //     );
+    //   }
+    // }
 
-    // Check if route requires email verification
-    if (_emailVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isEmailVerified) {
-        return VerificationRequirement(
-          required: true,
-          blocking: true,
-          emailRequired: true,
-          phoneRequired: false,
-          reason: 'Email verification is required to access this feature.',
-        );
-      }
-    }
+    // EMAIL OTP REMOVED: Skip email verification requirements  
+    // All routes are now accessible without email verification
+    // if (_emailVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
+    //   if (!user.isEmailVerified) {
+    //     return VerificationRequirement(
+    //       required: true,
+    //       blocking: true,
+    //       emailRequired: true,
+    //       phoneRequired: false,
+    //       reason: 'Email verification is required to access this feature.',
+    //     );
+    //   }
+    // }
 
-    // Check if route requires phone verification
-    if (_phoneVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isEmailVerified) {
-        return VerificationRequirement(
-          required: true,
-          blocking: true,
-          emailRequired: false,
-          phoneRequired: true,
-          reason: 'Phone verification is required to access this feature.',
-        );
-      }
-    }
+    // EMAIL OTP REMOVED: Skip phone verification requirements
+    // All routes are now accessible without phone verification  
+    // if (_phoneVerificationRequiredRoutes.any((r) => cleanRoute.startsWith(r))) {
+    //   if (!user.isEmailVerified) {
+    //     return VerificationRequirement(
+    //       required: true,
+    //       blocking: true,
+    //       emailRequired: false,
+    //       phoneRequired: true,
+    //       reason: 'Phone verification is required to access this feature.',
+    //     );
+    //   }
+    // }
 
-    // For optional verification routes, show banner but don't block
-    if (_verificationOptionalRoutes.any((r) => cleanRoute.startsWith(r))) {
-      if (!user.isEmailVerified) { // TODO: Add phone verification check when User model supports it
-        return VerificationRequirement(
-          required: true,
-          blocking: false,
-          emailRequired: !user.isEmailVerified,
-          phoneRequired: !user.isEmailVerified,
-          reason: 'Complete verification to access all features and enhance security.',
-        );
-      }
-    }
+    // EMAIL OTP REMOVED: Skip optional verification prompts
+    // No verification banners or prompts shown
+    // if (_verificationOptionalRoutes.any((r) => cleanRoute.startsWith(r))) {
+    //   if (!user.isEmailVerified) {
+    //     return VerificationRequirement(
+    //       required: true,
+    //       blocking: false,
+    //       emailRequired: !user.isEmailVerified,
+    //       phoneRequired: !user.isEmailVerified,
+    //       reason: 'Complete verification to access all features and enhance security.',
+    //     );
+    //   }
+    // }
 
     // No verification required
     return VerificationRequirement(

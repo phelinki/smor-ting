@@ -257,8 +257,8 @@ String? _handleAuthRedirect(
   ];
   
   final isPublicRoute = publicRoutes.contains(currentPath) ||
-      currentPath.startsWith('/verify-otp') ||
       currentPath.startsWith('/reset-password');
+      // EMAIL OTP REMOVED: /verify-otp is no longer a public route
   
   // Handle different authentication states
   switch (authState) {
@@ -277,7 +277,7 @@ String? _handleAuthRedirect(
       final user = authState.user;
       
       // Check if user is on a public route after authentication
-      if (isPublicRoute && currentPath != '/verify-otp') {
+      if (isPublicRoute) {
         // Redirect to appropriate dashboard
         return roleDetectionService.getDashboardRouteForRole(user.role);
       }
@@ -296,11 +296,9 @@ String? _handleAuthRedirect(
       return null;
       
     case RequiresOTP():
-      // User needs OTP verification
-      if (currentPath != '/verify-otp') {
-        return '/verify-otp?email=${authState.email}&fullName=${authState.user.fullName}';
-      }
-      return null;
+      // EMAIL OTP REMOVED: Skip OTP verification, go directly to dashboard
+      final user = authState.user;
+      return roleDetectionService.getDashboardRouteForRole(user.role);
       
     case Error():
     case EmailAlreadyExists():

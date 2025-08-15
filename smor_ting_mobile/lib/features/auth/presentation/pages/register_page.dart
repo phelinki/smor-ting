@@ -105,16 +105,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
       if (next is Authenticated) {
         context.go('/home');
-      } else if (next is RequiresOTP) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => OTPVerificationPage(
-              email: next.email,
-              userFullName: next.user.fullName,
-            ),
-          ),
-        );
       }
+      // EMAIL OTP REMOVED: No longer handle RequiresOTP state during registration
+      // Users go directly to home after successful registration
     });
 
     return Scaffold(

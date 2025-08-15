@@ -11,18 +11,9 @@ class NavigationFlowService {
 
   /// Get destination after successful login
   NavigationResult getPostLoginDestination(User user, {bool requiresKyc = false}) {
-    // Check email verification first
-    if (!user.isEmailVerified) {
-      return NavigationResult.withParameters(
-        destination: '/verify-otp',
-        queryParameters: {
-          'email': user.email,
-          'fullName': user.fullName,
-        },
-        shouldReplace: true,
-      );
-    }
-
+    // EMAIL OTP REMOVED: Skip email verification check
+    // All users go directly to dashboard regardless of email verification status
+    
     // Check KYC requirement for providers
     if (user.role == UserRole.provider && requiresKyc) {
       return NavigationResult.replace('/kyc', clearHistory: true);
@@ -35,21 +26,10 @@ class NavigationFlowService {
 
   /// Get destination after successful registration
   NavigationResult getPostRegistrationDestination(User user) {
-    // If email is already verified, go to dashboard
-    if (user.isEmailVerified) {
-      final dashboardRoute = _roleDetectionService.getDashboardRouteForRole(user.role);
-      return NavigationResult.replace(dashboardRoute, clearHistory: true);
-    }
-
-    // Otherwise, go to OTP verification
-    return NavigationResult.withParameters(
-      destination: '/verify-otp',
-      queryParameters: {
-        'email': user.email,
-        'fullName': user.fullName,
-      },
-      shouldReplace: true,
-    );
+    // EMAIL OTP REMOVED: Skip email verification completely
+    // All users go directly to dashboard after registration
+    final dashboardRoute = _roleDetectionService.getDashboardRouteForRole(user.role);
+    return NavigationResult.replace(dashboardRoute, clearHistory: true);
   }
 
   /// Get destination after OTP verification
