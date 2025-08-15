@@ -153,15 +153,10 @@ func (s *EnhancedAuthService) Authenticate(ctx context.Context, req *AuthRequest
 		}
 	}
 
-	// Check if 2FA is required
+	// Check if 2FA is required - DISABLED FOR NOW
 	requires2FA := s.requires2FA(user, deviceTrust)
-	if requires2FA && req.TwoFactorCode == "" {
-		return &AuthResult{
-			User:              user,
-			RequiresTwoFactor: true,
-			DeviceTrusted:     deviceTrust.IsTrusted,
-		}, nil
-	}
+	// Skip 2FA requirement check - always proceed with authentication
+	s.logger.Info("2FA requirement check bypassed", zap.Bool("requires2FA", requires2FA))
 
 	// Verify 2FA if provided
 	if req.TwoFactorCode != "" {
@@ -411,6 +406,7 @@ func (s *EnhancedAuthService) requires2FA(user *models.User, device *DeviceFinge
 	// TWO-FACTOR AUTH DISABLED: Skip 2FA requirement for all users/devices
 	// This removes the 2FA screen that was appearing after login
 	// Future versions may re-enable 2FA with proper configuration
+	s.logger.Info("DEBUG: requires2FA called - returning false (2FA disabled)")
 	return false
 }
 

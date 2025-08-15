@@ -65,27 +65,16 @@ func (a *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 		return nil, err
 	}
 
-	// Generate and send OTP
-	otp, err := a.generateOTP()
-	if err != nil {
-		return nil, err
-	}
+	// REGISTRATION OTP REMOVED: Users can now register and login directly
+	// This removes the OTP requirement during registration
+	// Future versions may implement different verification methods
 
-	err = a.saveOTP(ctx, req.Email, otp, "registration")
-	if err != nil {
-		return nil, err
-	}
-
-	// Send OTP email
-	err = a.emailService.SendOTP(req.Email, otp, "registration")
-	if err != nil {
-		// Log error but don't fail the registration
-		fmt.Printf("Failed to send OTP email: %v\n", err)
-	}
+	// Mark email as verified since we're skipping OTP
+	user.IsEmailVerified = true
 
 	return &models.AuthResponse{
 		User:        *user,
-		RequiresOTP: true,
+		RequiresOTP: false, // OTP DISABLED for registration
 	}, nil
 }
 
