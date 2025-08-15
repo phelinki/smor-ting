@@ -236,6 +236,7 @@ func (s *EnhancedAuthService) Authenticate(ctx context.Context, req *AuthRequest
 		RefreshToken:         tokenPair.RefreshToken,
 		SessionID:            sessionID,
 		DeviceTrusted:        deviceTrust.IsTrusted,
+		RequiresTwoFactor:    false, // TWO-FACTOR AUTH DISABLED
 		RequiresVerification: false, // TODO: Add IsVerified field to User model
 		TokenExpiresAt:       time.Now().Add(30 * time.Minute),
 		RefreshExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
@@ -407,21 +408,9 @@ func (s *EnhancedAuthService) calculateTrustScore(device *DeviceFingerprint) flo
 }
 
 func (s *EnhancedAuthService) requires2FA(user *models.User, device *DeviceFingerprint) bool {
-	// Always require 2FA for admin users
-	if string(user.Role) == "admin" {
-		return true
-	}
-
-	// Require 2FA for untrusted devices
-	if !device.IsTrusted {
-		return true
-	}
-
-	// Require 2FA if device shows signs of compromise
-	if device.IsJailbroken || device.TrustScore < 0.5 {
-		return true
-	}
-
+	// TWO-FACTOR AUTH DISABLED: Skip 2FA requirement for all users/devices
+	// This removes the 2FA screen that was appearing after login
+	// Future versions may re-enable 2FA with proper configuration
 	return false
 }
 

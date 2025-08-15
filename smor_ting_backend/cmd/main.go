@@ -304,7 +304,7 @@ func (a *App) initializeSecurityServices() error {
 	userService := services.NewUserServiceAdapter(a.authSvc)
 	captchaService := services.NewStubCaptchaService(a.logger.Logger)
 
-	// Wrap OTP service to match handler interface
+	// EMAIL OTP REMOVED: Use stub OTP service (disabled)
 	otpSvc := &OtpAdapter{core: services.NewStubOTPService(a.logger.Logger)}
 	enhancedAuthHandler := handlers.NewEnhancedAuthHandler(
 		adapter,
