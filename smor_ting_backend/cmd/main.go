@@ -1,5 +1,6 @@
 package main
 
+// Force Railway deployment - removed railway.toml configuration
 import (
 	"context"
 	"encoding/base64"
