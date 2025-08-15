@@ -13,13 +13,13 @@ class ApiConfig {
     return 'http://127.0.0.1:8088';
   }
   static const String _stagingBaseUrl = 'https://api.smor-ting.com';
-  static const String _productionBaseUrl = 'https://smor-ting-production.up.railway.app';
+  static const String _productionBaseUrl = 'https://api.smor-ting.com';
   
   // Environment selection
   // - In release/TestFlight/App Store builds (kReleaseMode), use production
-  // - In debug/profile (simulator/local dev), use development
+  // - In debug/profile (simulator/local dev), use production for now (no local backend)
   static Environment get _currentEnvironment =>
-      kReleaseMode ? Environment.production : Environment.development;
+      kReleaseMode ? Environment.production : Environment.production;
   
   static String get baseUrl {
     switch (_currentEnvironment) {

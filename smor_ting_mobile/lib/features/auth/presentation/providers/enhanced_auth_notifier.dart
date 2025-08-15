@@ -144,13 +144,9 @@ class EnhancedAuthNotifier {
       } else {
         router.push(navigationResult.fullUri);
       }
-    } else if (authState is RequiresOTP) {
-      final user = authState.user;
-      
-      final navigationResult = _navigationFlowService.getPostRegistrationDestination(user);
-      
-      router.pushReplacement(navigationResult.fullUri);
     }
+    // EMAIL OTP REMOVED: No longer handle RequiresOTP state
+    // All users go directly to dashboard after registration
   }
 
   /// Handle navigation after successful OTP verification
