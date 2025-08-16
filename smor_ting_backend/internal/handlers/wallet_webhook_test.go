@@ -19,7 +19,7 @@ import (
 func TestMomoWebhook_Topup_UpdatesBalances(t *testing.T) {
 	// Setup repo and user
 	repo := database.NewMemoryDatabase()
-	user := &models.User{Email: "webhook@example.com", Wallet: models.Wallet{Currency: "LRD"}}
+	user := &models.User{Email: "webhook@example.com", Wallet: models.Wallet{Currency: "USD"}}
 	if err := repo.CreateUser(context.TODO(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestMomoWebhook_Topup_UpdatesBalances(t *testing.T) {
 
 func TestMomoWebhook_EscrowHoldAndRelease(t *testing.T) {
 	repo := database.NewMemoryDatabase()
-	user := &models.User{Email: "escrow@example.com", Wallet: models.Wallet{Currency: "LRD"}}
+	user := &models.User{Email: "escrow@example.com", Wallet: models.Wallet{Currency: "USD"}}
 	_ = repo.CreateUser(context.TODO(), user)
 	svc := services.NewWalletLedgerService(repo)
 	lg, _ := logger.New("debug", "console", "stdout")

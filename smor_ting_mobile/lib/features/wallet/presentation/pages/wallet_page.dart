@@ -488,7 +488,7 @@ class _WalletPageState extends ConsumerState<WalletPage> {
             ),
           ),
           Text(
-            '${isCredit ? '+' : '-'}L\$${transaction.amount.toStringAsFixed(2)}',
+            '${isCredit ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: isCredit ? AppTheme.successGreen : AppTheme.primaryRed,
               fontWeight: FontWeight.bold,

@@ -37,11 +37,18 @@ func (r *MongoDBRepository) CreateUser(ctx context.Context, user *models.User) e
 	user.Version = 1
 	user.IsOffline = false
 
-	// Initialize wallet
-	user.Wallet = models.Wallet{
-		Balance:     0,
-		Currency:    "LRD",
-		LastUpdated: time.Now(),
+	// Initialize wallet with default currency if not already set
+	if user.Wallet.Currency == "" {
+		user.Wallet = models.Wallet{
+			Balance:     0,
+			Currency:    "USD",
+			LastUpdated: time.Now(),
+		}
+	} else {
+		// Preserve existing wallet settings but ensure LastUpdated is set
+		if user.Wallet.LastUpdated.IsZero() {
+			user.Wallet.LastUpdated = time.Now()
+		}
 	}
 
 	collection := r.db.Collection("users")

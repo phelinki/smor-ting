@@ -76,6 +76,13 @@ android {
         }
     }
     
+    // Disable debug symbol stripping to work around toolchain issues
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+    
     // Suppress known lint issue as per Flutter fix guidance (Groovy lintOptions -> Kotlin DSL)
     lint {
         checkReleaseBuilds = false
@@ -83,8 +90,13 @@ android {
 }
 
 dependencies {
-    // Updated Play Core library for Android 14 compatibility
-    implementation("com.google.android.play:core-ktx:1.8.1")
+    // Updated Play Core libraries for Android 14 compatibility
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
+    implementation("com.google.android.play:review:2.0.1")
+    implementation("com.google.android.play:review-ktx:2.0.1")
+    implementation("com.google.android.play:asset-delivery:2.1.0")
+    implementation("com.google.android.play:asset-delivery-ktx:2.1.0")
 }
 
 flutter {

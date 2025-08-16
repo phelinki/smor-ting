@@ -10,7 +10,7 @@ class AppConstants {
   
   // Liberia-specific settings
   static const String defaultCountry = 'Liberia';
-  static const String defaultCurrency = 'LRD';
+  static const String defaultCurrency = 'USD';
   static const String defaultLanguage = 'en';
   static const String defaultTimezone = 'Africa/Monrovia';
   

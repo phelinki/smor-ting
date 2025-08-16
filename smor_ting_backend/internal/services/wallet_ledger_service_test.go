@@ -14,7 +14,7 @@ func TestComputeBalances_AvailableAndPending(t *testing.T) {
 	repo := database.NewMemoryDatabase()
 	svc := services.NewWalletLedgerService(repo)
 	// Seed user and get assigned ID
-	_ = repo.CreateUser(context.TODO(), &models.User{Email: "u@example.com", Wallet: models.Wallet{Currency: "LRD"}})
+	_ = repo.CreateUser(context.TODO(), &models.User{Email: "u@example.com", Wallet: models.Wallet{Currency: "USD"}})
 	u, err := repo.GetUserByEmail(context.TODO(), "u@example.com")
 	if err != nil {
 		t.Fatalf("seed user: %v", err)
