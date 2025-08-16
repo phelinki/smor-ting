@@ -145,6 +145,8 @@ class AuthResponse {
   final String? accessToken;
   @JsonKey(name: 'refresh_token')
   final String? refreshToken;
+  @JsonKey(name: 'session_id')
+  final String? sessionId;  // Add this line
   @JsonKey(name: 'requires_otp', defaultValue: false)
   final bool requiresOTP;
 
@@ -152,6 +154,7 @@ class AuthResponse {
     required this.user,
     this.accessToken,
     this.refreshToken,
+    this.sessionId,  // Add this line
     this.requiresOTP = false,
   });
 

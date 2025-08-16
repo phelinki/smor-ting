@@ -50,6 +50,11 @@ class _SimpleLoginPageState extends ConsumerState<SimpleLoginPage> {
           // User is authenticated, GoRouter will handle navigation
           // No manual navigation needed
         },
+        requiresOTP: (email, user) {
+          // Handle OTP required state
+          // You might want to navigate to an OTP input page
+          context.go('/otp-verification');
+        },
         error: (message) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message)),

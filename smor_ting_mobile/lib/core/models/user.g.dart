@@ -108,6 +108,7 @@ AuthResponse _$AuthResponseFromJson(Map<String, dynamic> json) => AuthResponse(
       user: User.fromJson(json['user'] as Map<String, dynamic>),
       accessToken: json['access_token'] as String?,
       refreshToken: json['refresh_token'] as String?,
+      sessionId: json['session_id'] as String?,
       requiresOTP: json['requires_otp'] as bool? ?? false,
     );
 
@@ -116,5 +117,6 @@ Map<String, dynamic> _$AuthResponseToJson(AuthResponse instance) =>
       'user': instance.user,
       'access_token': instance.accessToken,
       'refresh_token': instance.refreshToken,
+      'session_id': instance.sessionId,
       'requires_otp': instance.requiresOTP,
     };

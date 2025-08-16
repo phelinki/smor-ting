@@ -42,3 +42,12 @@ class AccountNotVerifiedException extends AuthException {
           details: {'email': email},
         );
 }
+
+/// Exception thrown when token authentication/refresh fails
+class AuthenticationException extends AuthException {
+  AuthenticationException(String message)
+      : super(
+          message,
+          code: 'AUTHENTICATION_FAILED',
+        );
+}

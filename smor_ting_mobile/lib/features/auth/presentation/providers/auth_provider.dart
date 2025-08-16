@@ -58,7 +58,9 @@ class AuthNotifier extends _$AuthNotifier {
     } catch (e) {
       print('🔴 AuthProvider: Failed to restore auth state: $e');
       await _clearStoredTokens();
+      // IMPORTANT: Set state to initial instead of letting exception propagate
       state = const AuthState.initial();
+      // DO NOT rethrow the exception - just log it and continue
     } finally {
       _isInitializing = false; // Always reset the guard
     }
@@ -208,6 +210,29 @@ sealed class AuthState {
   const factory AuthState.emailAlreadyExists(String email) = EmailAlreadyExists;
   const factory AuthState.passwordResetEmailSent(String email) = PasswordResetEmailSent;
   const factory AuthState.passwordResetSuccess() = PasswordResetSuccess;
+
+  // Add this method
+  T when<T>({
+    required T Function() initial,
+    required T Function() loading,
+    required T Function(User user, String accessToken) authenticated,
+    required T Function(String email, User user) requiresOTP,
+    required T Function(String message) error,
+    required T Function(String email) emailAlreadyExists,
+    required T Function(String email) passwordResetEmailSent,
+    required T Function() passwordResetSuccess,
+  }) {
+    return switch (this) {
+      Initial() => initial(),
+      Loading() => loading(),
+      Authenticated(:final user, :final accessToken) => authenticated(user, accessToken),
+      RequiresOTP(:final email, :final user) => requiresOTP(email, user),
+      Error(:final message) => error(message),
+      EmailAlreadyExists(:final email) => emailAlreadyExists(email),
+      PasswordResetEmailSent(:final email) => passwordResetEmailSent(email),
+      PasswordResetSuccess() => passwordResetSuccess(),
+    };
+  }
 }
 
 class Initial extends AuthState {

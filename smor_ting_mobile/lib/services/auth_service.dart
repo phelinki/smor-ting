@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/services/api_service.dart';
+import '../core/exceptions/auth_exceptions.dart';
 
 class AuthService {
   final ApiService _apiService;
@@ -16,19 +17,26 @@ class AuthService {
   }) : _apiService = apiService, _secureStorage = secureStorage;
 
   Future<String> getValidToken() async {
-    final accessToken = await _secureStorage.read(key: 'access_token');
-    
-    if (accessToken == null) {
-      throw Exception('No access token found');
+    try {
+      final accessToken = await _secureStorage.read(key: 'access_token');
+      
+      if (accessToken == null) {
+        throw AuthenticationException('No access token found');
+      }
+      
+      // Check if token is still valid (with buffer time)
+      if (await _isTokenValid(accessToken)) {
+        return accessToken;
+      }
+      
+      // If not valid, refresh it
+      return await refreshToken();
+    } catch (e) {
+      // Clear invalid tokens
+      await _clearTokens();
+      // Throw a specific exception that can be caught
+      throw AuthenticationException('Token validation failed: ${e.toString()}');
     }
-    
-    // Check if token is still valid (with buffer time)
-    if (await _isTokenValid(accessToken)) {
-      return accessToken;
-    }
-    
-    // If not valid, refresh it
-    return await refreshToken();
   }
 
   Future<String> refreshToken() async {
@@ -115,6 +123,17 @@ class AuthService {
         key: 'session_id', 
         value: response['session_id'] as String? ?? ''
       ),
+    ]);
+  }
+
+  // Clear all stored tokens
+  Future<void> _clearTokens() async {
+    await Future.wait([
+      _secureStorage.delete(key: 'access_token'),
+      _secureStorage.delete(key: 'refresh_token'),
+      _secureStorage.delete(key: 'session_id'),
+      _secureStorage.delete(key: 'token_expires_at'),
+      _secureStorage.delete(key: 'refresh_expires_at'),
     ]);
   }
 

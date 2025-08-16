@@ -31,18 +31,26 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     if (_hasInitialized) return;
     _hasInitialized = true;
     
-    print('🔵 SplashPage: Starting app initialization...');
-    
-    // Initialize auth state
-    await ref.read(authNotifierProvider.notifier).initializeAuthState();
-    
-    print('🔵 SplashPage: Auth initialization complete');
-    
-    // Wait a moment to ensure state updates
-    await Future.delayed(const Duration(milliseconds: 100));
-    
-    // The GoRouter redirect will handle navigation based on auth state
-    // No manual navigation needed here
+    try {
+      print('🔵 SplashPage: Starting app initialization...');
+      
+      // Initialize auth state
+      await ref.read(authNotifierProvider.notifier).initializeAuthState();
+      
+      print('🔵 SplashPage: Auth initialization complete');
+      
+      // Wait a moment to ensure state updates
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // The GoRouter redirect will handle navigation based on auth state
+      // No manual navigation needed here
+      
+    } catch (e) {
+      print('🔴 SplashPage: Error during initialization: $e');
+      // CRITICAL: Never let exceptions bubble up from initialization
+      // The auth provider should have already set an appropriate state
+      // Just log the error and let GoRouter handle navigation based on current state
+    }
   }
 
   // Navigation methods removed - GoRouter handles all navigation based on auth state
