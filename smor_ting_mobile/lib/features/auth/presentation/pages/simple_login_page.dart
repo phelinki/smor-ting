@@ -41,11 +41,9 @@ class _SimpleLoginPageState extends ConsumerState<SimpleLoginPage> {
         _emailController.text.trim(),
         _passwordController.text,
       );
-
-      // Remove this manual navigation - let the router handle it
-      // if (mounted) {
-      //   context.go('/home');
-      // }
+      
+      // Remove this line - let the router handle navigation automatically:
+      // context.go('/home');
       
     } catch (e) {
       if (mounted) {

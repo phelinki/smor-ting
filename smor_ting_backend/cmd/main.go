@@ -730,8 +730,8 @@ func (a *App) getUserProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	// Return complete user object matching mobile app expectations
-	return c.JSON(fiber.Map{
+	// Build complete user object matching mobile app expectations
+	userResponse := fiber.Map{
 		"id":                user.ID.Hex(),
 		"email":             user.Email,
 		"first_name":        user.FirstName,
@@ -742,7 +742,30 @@ func (a *App) getUserProfile(c *fiber.Ctx) error {
 		"profile_image":     user.ProfileImage,
 		"created_at":        user.CreatedAt,
 		"updated_at":        user.UpdatedAt,
-	})
+	}
+
+	// Add address if it exists
+	if user.Address != nil {
+		userResponse["address"] = fiber.Map{
+			"street":    user.Address.Street,
+			"city":      user.Address.City,
+			"county":    user.Address.County,
+			"country":   user.Address.Country,
+			"latitude":  user.Address.Latitude,
+			"longitude": user.Address.Longitude,
+		}
+	}
+
+	// Add wallet information if it exists
+	if user.Wallet.Balance > 0 || user.Wallet.Currency != "" {
+		userResponse["wallet"] = fiber.Map{
+			"balance":      user.Wallet.Balance,
+			"currency":     user.Wallet.Currency,
+			"last_updated": user.Wallet.LastUpdated,
+		}
+	}
+
+	return c.JSON(userResponse)
 }
 
 func (a *App) getServices(c *fiber.Ctx) error {
