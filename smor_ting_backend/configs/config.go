@@ -126,12 +126,12 @@ func LoadConfig() (*Config, error) {
 			JWTSecret:        getEnv("JWT_SECRET", ""),
 			JWTExpiration:    getDurationEnv("JWT_EXPIRATION", 24*time.Hour),
 			BCryptCost:       getIntEnv("BCRYPT_COST", 12),
-			JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", "your-32-byte-access-secret-key-change-in-production"),
-			JWTRefreshSecret: getEnv("JWT_REFRESH_SECRET", "your-32-byte-refresh-secret-key-change-in-production"),
+			JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", "abcdefghijklmnopqrstuvwxyz123456"),  // Exactly 32 bytes for development
+			JWTRefreshSecret: getEnv("JWT_REFRESH_SECRET", "zyxwvutsrqponmlkjihgfedcba654321"), // Exactly 32 bytes for development
 		},
 		Security: SecurityConfig{
-			EncryptionKey:        getEnv("ENCRYPTION_KEY", "your-32-byte-encryption-key-change-in-production"),
-			PaymentEncryptionKey: getEnv("PAYMENT_ENCRYPTION_KEY", "your-32-byte-payment-encryption-key-change-in-production"),
+			EncryptionKey:        getEnv("ENCRYPTION_KEY", "12345678901234567890123456789012"),         // Exactly 32 bytes for development
+			PaymentEncryptionKey: getEnv("PAYMENT_ENCRYPTION_KEY", "12345678901234567890123456789012"), // Exactly 32 bytes for development
 			RateLimitRequests:    getIntEnv("RATE_LIMIT_REQUESTS", 100),
 			RateLimitWindow:      getDurationEnv("RATE_LIMIT_WINDOW", 1*time.Minute),
 		},
@@ -268,7 +268,7 @@ func (c *Config) validate() error {
 
 // validateSecretSecurity checks if a secret meets security requirements
 func (c *Config) validateSecretSecurity(name, value string) error {
-	// List of insecure default values that should never be used
+	// List of insecure default values that should never be used in production
 	insecureDefaults := []string{
 		"your-secret-key",
 		"your-secret-key-change-in-production",
@@ -290,10 +290,26 @@ func (c *Config) validateSecretSecurity(name, value string) error {
 		"123456",
 	}
 
+	// Allow development-only defaults (but only in development mode)
+	developmentDefaults := []string{
+		"abcdefghijklmnopqrstuvwxyz123456", // JWT access secret
+		"zyxwvutsrqponmlkjihgfedcba654321", // JWT refresh secret
+		"12345678901234567890123456789012", // Encryption keys
+	}
+
 	// Check if the value is one of the insecure defaults
 	for _, insecure := range insecureDefaults {
 		if value == insecure {
 			return fmt.Errorf("%s contains an insecure default value. Please set a secure value", name)
+		}
+	}
+
+	// In production/staging, also check development defaults are not used
+	if c.IsProduction() || c.IsStaging() {
+		for _, devDefault := range developmentDefaults {
+			if value == devDefault {
+				return fmt.Errorf("%s is using a development default value. Please set a secure production value", name)
+			}
 		}
 	}
 

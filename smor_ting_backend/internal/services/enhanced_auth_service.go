@@ -158,12 +158,18 @@ func (s *EnhancedAuthService) Authenticate(ctx context.Context, req *AuthRequest
 	// Skip 2FA requirement check - always proceed with authentication
 	s.logger.Info("2FA requirement check bypassed", zap.Bool("requires2FA", requires2FA))
 
-	// Verify 2FA if provided
-	if req.TwoFactorCode != "" {
+	// 2FA GLOBALLY DISABLED: Skip verification of 2FA codes even if provided
+	// This ensures that any provided 2FA codes are ignored when 2FA is disabled
+	if req.TwoFactorCode != "" && requires2FA {
+		// Only verify 2FA if it's actually required (which is never in current state)
 		if err := s.verify2FA(ctx, user, req.TwoFactorCode); err != nil {
 			s.bruteForceProtector.RecordFailure(req.Email, req.IPAddress)
 			return nil, fmt.Errorf("two-factor authentication failed: %w", err)
 		}
+	} else if req.TwoFactorCode != "" {
+		// Log that a 2FA code was provided but ignored
+		s.logger.Info("2FA code provided but ignored (2FA globally disabled)",
+			zap.String("email", user.Email))
 	}
 
 	// Generate session

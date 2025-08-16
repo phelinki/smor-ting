@@ -1,14 +1,14 @@
 package services
 
 import (
-    "context"
-    "fmt"
-    "time"
+	"context"
+	"fmt"
+	"time"
 
-    "github.com/smorting/backend/internal/auth"
-    "github.com/smorting/backend/internal/models"
-    "go.uber.org/zap"
-    "golang.org/x/crypto/bcrypt"
+	"github.com/smorting/backend/internal/auth"
+	"github.com/smorting/backend/internal/models"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserServiceAdapter adapts the existing auth service to implement UserService interface
@@ -21,7 +21,7 @@ func NewUserServiceAdapter(authService *auth.MongoDBService) *UserServiceAdapter
 }
 
 func (u *UserServiceAdapter) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-    return u.authService.GetUserByEmail(ctx, email)
+	return u.authService.GetUserByEmail(ctx, email)
 }
 
 func (u *UserServiceAdapter) GetUserByID(ctx context.Context, userID string) (*models.User, error) {
@@ -31,13 +31,13 @@ func (u *UserServiceAdapter) GetUserByID(ctx context.Context, userID string) (*m
 }
 
 func (u *UserServiceAdapter) VerifyPassword(password, hash string) error {
-    return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
 func (u *UserServiceAdapter) UpdateLastLogin(ctx context.Context, userID string) error {
-    // Best-effort no-op for now
-    _ = time.Now()
-    return nil
+	// Best-effort no-op for now
+	_ = time.Now()
+	return nil
 }
 
 // StubOTPService provides a stub implementation of OTPService
@@ -51,8 +51,8 @@ func NewStubOTPService(logger *zap.Logger) *StubOTPService {
 
 // CreateOTP implements OTP creation compatible with services.OTPService
 func (s *StubOTPService) CreateOTP(ctx context.Context, email, purpose string) error {
-    s.logger.Info("Stub OTP creation", zap.String("email", email), zap.String("purpose", purpose))
-    return nil
+	s.logger.Info("Stub OTP creation", zap.String("email", email), zap.String("purpose", purpose))
+	return nil
 }
 
 func (s *StubOTPService) GenerateOTP(ctx context.Context, userID, purpose string) (string, error) {
@@ -61,7 +61,7 @@ func (s *StubOTPService) GenerateOTP(ctx context.Context, userID, purpose string
 }
 
 func (s *StubOTPService) VerifyOTP(ctx context.Context, email, otp string) error {
-    s.logger.Info("Stub OTP verification", zap.String("email", email), zap.String("otp", otp))
+	s.logger.Info("Stub OTP verification", zap.String("email", email), zap.String("otp", otp))
 	if otp == "123456" {
 		return nil // Accept stub OTP
 	}
@@ -70,8 +70,8 @@ func (s *StubOTPService) VerifyOTP(ctx context.Context, email, otp string) error
 
 // GetLatestOTPByEmail returns a stubbed OTP record for tests/dev
 func (s *StubOTPService) GetLatestOTPByEmail(ctx context.Context, email string) (*models.OTPRecord, error) {
-    s.logger.Info("Stub get latest OTP by email", zap.String("email", email))
-    return &models.OTPRecord{OTP: "123456"}, nil
+	s.logger.Info("Stub get latest OTP by email", zap.String("email", email))
+	return &models.OTPRecord{OTP: "123456"}, nil
 }
 
 // StubCaptchaService provides a stub implementation of CaptchaService
@@ -101,10 +101,22 @@ func NewStubEnhancedAuthService(logger *zap.Logger) *StubEnhancedAuthService {
 func (s *StubEnhancedAuthService) EnhancedLogin(req *models.EnhancedLoginRequest, clientIP string) (*models.EnhancedAuthResult, error) {
 	s.logger.Info("Stub enhanced login", zap.String("email", req.Email), zap.String("clientIP", clientIP))
 
+	// Create a stub user based on the request
+	user := &models.User{
+		Email:     req.Email,
+		FirstName: "Test",
+		LastName:  "User",
+		Role:      models.CustomerRole,
+	}
+
 	// Return a stub successful result
 	return &models.EnhancedAuthResult{
 		Success:              true,
 		Message:              "Login successful (stub)",
+		User:                 user,
+		AccessToken:          "stub_access_token",
+		RefreshToken:         "stub_refresh_token",
+		SessionID:            "stub_session_id",
 		RequiresTwoFactor:    false,
 		RequiresVerification: false,
 		RequiresCaptcha:      false,

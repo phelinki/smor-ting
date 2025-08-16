@@ -171,13 +171,26 @@ func (m *MockEnhancedAuthService) UpdateSessionActivity(sessionID string) error 
 }
 
 // MockUserService is a mock implementation for testing
-type MockUserService struct{}
+type MockUserService struct {
+	users map[string]*models.User
+}
+
+func NewMockUserService() *MockUserService {
+	return &MockUserService{
+		users: make(map[string]*models.User),
+	}
+}
+
+func (m *MockUserService) CreateUser(ctx context.Context, user *models.User) error {
+	m.users[user.Email] = user
+	return nil
+}
 
 func (m *MockUserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	return &models.User{
-		Email: email,
-		Role:  models.CustomerRole,
-	}, nil
+	if user, exists := m.users[email]; exists {
+		return user, nil
+	}
+	return nil, fmt.Errorf("user not found")
 }
 
 func (m *MockUserService) GetUserByID(ctx context.Context, userID string) (*models.User, error) {

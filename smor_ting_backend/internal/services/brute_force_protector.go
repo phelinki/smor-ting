@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -61,37 +60,13 @@ func NewBruteForceProtector(logger *zap.Logger) *BruteForceProtector {
 
 // CheckAllowed checks if authentication attempt is allowed
 func (bp *BruteForceProtector) CheckAllowed(email, ipAddress string) error {
-	bp.mu.RLock()
-	defer bp.mu.RUnlock()
-
-	now := time.Now()
-
-	// Check email-based lockout
-	if emailTracker, exists := bp.emailAttempts[email]; exists {
-		if now.Before(emailTracker.LockedUntil) {
-			remaining := emailTracker.LockedUntil.Sub(now)
-			bp.logger.Warn("Email locked due to brute force",
-				zap.String("email", email),
-				zap.Duration("remaining", remaining),
-				zap.Int("total_lockouts", emailTracker.TotalLockouts),
-			)
-			return fmt.Errorf("account temporarily locked. Try again in %v", remaining.Round(time.Minute))
-		}
-	}
-
-	// Check IP-based lockout
-	if ipTracker, exists := bp.ipAttempts[ipAddress]; exists {
-		if now.Before(ipTracker.LockedUntil) {
-			remaining := ipTracker.LockedUntil.Sub(now)
-			bp.logger.Warn("IP locked due to brute force",
-				zap.String("ip", ipAddress),
-				zap.Duration("remaining", remaining),
-				zap.Int("total_lockouts", ipTracker.TotalLockouts),
-			)
-			return fmt.Errorf("too many failed attempts from this location. Try again in %v", remaining.Round(time.Minute))
-		}
-	}
-
+	// BRUTE FORCE PROTECTION DISABLED FOR DEVELOPMENT
+	// This allows unlimited login attempts during development testing
+	// In production, this should be enabled for security
+	bp.logger.Debug("Brute force protection check - allowing request (disabled for development)",
+		zap.String("email", email),
+		zap.String("ip", ipAddress),
+	)
 	return nil
 }
 
@@ -291,18 +266,13 @@ func (bp *BruteForceProtector) cleanupExpiredEntries() {
 
 // RequiresCaptcha determines if CAPTCHA should be required
 func (bp *BruteForceProtector) RequiresCaptcha(email, ipAddress string) bool {
-	bp.mu.RLock()
-	defer bp.mu.RUnlock()
-
-	// Require CAPTCHA after 3 failed attempts
-	if tracker, exists := bp.emailAttempts[email]; exists && tracker.FailedAttempts >= 3 {
-		return true
-	}
-
-	if tracker, exists := bp.ipAttempts[ipAddress]; exists && tracker.FailedAttempts >= 3 {
-		return true
-	}
-
+	// CAPTCHA DISABLED FOR DEVELOPMENT: Always return false
+	// This prevents CAPTCHA requirements during development testing
+	// In production, this should be enabled for security
+	bp.logger.Debug("CAPTCHA requirement check - returning false (disabled for development)",
+		zap.String("email", email),
+		zap.String("ip", ipAddress),
+	)
 	return false
 }
 

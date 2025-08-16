@@ -234,13 +234,26 @@ func (a *App) initializeSecurityServices() error {
 		}
 	}
 
+	a.logger.Info("Processing encryption key",
+		zap.String("raw_key", a.config.Security.EncryptionKey),
+		zap.Int("raw_key_length", len(a.config.Security.EncryptionKey)),
+		zap.Bool("is_development", a.config.IsDevelopment()),
+	)
+
 	encryptionKey, err := base64.StdEncoding.DecodeString(a.config.Security.EncryptionKey)
 	if err != nil {
 		if a.config.IsDevelopment() {
+			a.logger.Info("Base64 decode failed, using raw key in development",
+				zap.Error(err),
+			)
 			encryptionKey = []byte(a.config.Security.EncryptionKey)
 		} else {
 			return fmt.Errorf("failed to decode encryption key: %w", err)
 		}
+	} else {
+		a.logger.Info("Successfully decoded base64 encryption key",
+			zap.Int("decoded_length", len(encryptionKey)),
+		)
 	}
 
 	paymentEncryptionKey, err := base64.StdEncoding.DecodeString(a.config.Security.PaymentEncryptionKey)
@@ -265,9 +278,13 @@ func (a *App) initializeSecurityServices() error {
 	a.jwtService = jwtService
 
 	// Initialize encryption service
+	a.logger.Info("Creating encryption service",
+		zap.Int("key_length", len(encryptionKey)),
+		zap.String("key_source", "config"),
+	)
 	encryptionService, err := services.NewEncryptionService(encryptionKey)
 	if err != nil {
-		return fmt.Errorf("failed to create encryption service: %w", err)
+		return fmt.Errorf("failed to create encryption service (key length: %d): %w", len(encryptionKey), err)
 	}
 	a.encryptionService = encryptionService
 
@@ -477,7 +494,7 @@ func (a *App) setupRoutes(app *fiber.App, authMiddleware *middleware.JWTAuthMidd
 	auth.Delete("/sessions/:id", authMiddleware.Authenticate(), a.enhancedAuthHandler.RevokeSession)
 	auth.Delete("/sessions/all", authMiddleware.Authenticate(), a.enhancedAuthHandler.RevokeAllSessions)
 
-	// EMAIL OTP TEST ENDPOINT DISABLED - Removed email OTP functionality 
+	// EMAIL OTP TEST ENDPOINT DISABLED - Removed email OTP functionality
 	// auth.Get("/test/get-latest-otp", a.authHandler.TestGetLatestOTP)
 
 	// Protected routes (authentication required)

@@ -1,8 +1,18 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Load keystore properties
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -31,17 +41,50 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists() && keystoreProperties["storeFile"] != null) {
+                val keystoreFile = file(keystoreProperties["storeFile"] as String)
+                if (keystoreFile.exists()) {
+                    keyAlias = keystoreProperties["keyAlias"] as String?
+                    keyPassword = keystoreProperties["keyPassword"] as String?
+                    storeFile = keystoreFile
+                    storePassword = keystoreProperties["storePassword"] as String?
+                }
+            }
         }
     }
+
+    buildTypes {
+        release {
+            // Use release signing config if available, otherwise use debug
+            signingConfig = if (keystorePropertiesFile.exists() && 
+                               keystoreProperties["storeFile"] != null && 
+                               file(keystoreProperties["storeFile"] as String).exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            // Explicitly disable minification and resource shrinking for testing
+            isMinifyEnabled = false
+            isShrinkResources = false
+            // proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
+    
     // Suppress known lint issue as per Flutter fix guidance (Groovy lintOptions -> Kotlin DSL)
     lint {
         checkReleaseBuilds = false
     }
+}
+
+dependencies {
+    // Updated Play Core library for Android 14 compatibility
+    implementation("com.google.android.play:core-ktx:1.8.1")
 }
 
 flutter {

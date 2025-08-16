@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/services/api_service.dart';
+import '../../../../core/models/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 
@@ -69,19 +70,35 @@ class _SplashPageState extends ConsumerState<SplashPage>
     await Future.delayed(const Duration(milliseconds: 500));
     
     try {
-      // Clear any stored auth tokens to prevent refresh loop issues
-      // This ensures we start with a clean auth state after OTP removal
-      final apiService = ref.read(apiServiceProvider);
-      apiService.clearAuthToken();
+      print('🔵 SplashPage: Starting app initialization...');
       
-      print('🔵 SplashPage: Cleared stored auth tokens');
+      // Initialize auth state - this will check for stored tokens and restore session
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+      await authNotifier.initializeAuthState();
       
-      // Give the app time to stabilize and let GoRouter redirect to landing page
-      await Future.delayed(const Duration(milliseconds: 1500));
+      print('🔵 SplashPage: Auth initialization complete');
       
-      print('🔵 SplashPage: Initialization complete');
+      // Give the app time to stabilize
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Force navigation based on auth state
+      final authState = ref.read(authNotifierProvider);
+      if (authState is Authenticated) {
+        final userRole = authState.user.role;
+        if (userRole == UserRole.provider || userRole == UserRole.admin) {
+          context.go('/agent-dashboard');
+        } else {
+          context.go('/home');
+        }
+      } else {
+        context.go('/landing');
+      }
+      
+      print('🔵 SplashPage: Navigation triggered');
     } catch (e) {
       print('🔴 SplashPage: Error during initialization: $e');
+      // On error, go to landing page
+      context.go('/landing');
     }
   }
 

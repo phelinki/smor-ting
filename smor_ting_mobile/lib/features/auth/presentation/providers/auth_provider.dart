@@ -2,14 +2,67 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/models/user.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/exceptions/auth_exceptions.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 part 'auth_provider.g.dart';
 
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
+  final _secureStorage = const FlutterSecureStorage();
+  
   @override
   AuthState build() {
+    // Start with initial state, not loading
+    // The initialization will happen in the splash page
     return const AuthState.initial();
+  }
+
+  /// Initialize auth state by checking for stored tokens
+  /// This should be called from the splash page
+  Future<void> initializeAuthState() async {
+    try {
+      print('🔵 AuthProvider: Checking for stored authentication tokens...');
+      
+      // Check if we have stored tokens
+      final accessToken = await _secureStorage.read(key: 'access_token');
+      final refreshToken = await _secureStorage.read(key: 'refresh_token');
+      final sessionId = await _secureStorage.read(key: 'session_id');
+      
+      if (accessToken == null || refreshToken == null) {
+        print('🔵 AuthProvider: No stored tokens found, user needs to login');
+        state = const AuthState.initial();
+        return;
+      }
+      
+      print('🔵 AuthProvider: Found stored tokens, validating...');
+      
+      // Try to get a valid token (this will refresh if needed)
+      final apiService = ref.read(apiServiceProvider);
+      final validToken = await apiService.authService.getValidToken();
+      
+      // Fetch user profile to restore full auth state
+      final user = await apiService.getUserProfile();
+      
+      print('🔵 AuthProvider: Successfully restored authentication state for user: ${user.email}');
+      state = AuthState.authenticated(user, validToken);
+      
+    } catch (e) {
+      print('🔴 AuthProvider: Failed to restore auth state: $e');
+      // Clear invalid tokens
+      await _clearStoredTokens();
+      state = const AuthState.initial();
+    }
+  }
+
+  /// Clear all stored authentication tokens
+  Future<void> _clearStoredTokens() async {
+    await Future.wait([
+      _secureStorage.delete(key: 'access_token'),
+      _secureStorage.delete(key: 'refresh_token'),
+      _secureStorage.delete(key: 'session_id'),
+      _secureStorage.delete(key: 'token_expires_at'),
+      _secureStorage.delete(key: 'refresh_expires_at'),
+    ]);
   }
 
   Future<void> login(String email, String password) async {
@@ -20,8 +73,16 @@ class AuthNotifier extends _$AuthNotifier {
       final request = LoginRequest(email: email, password: password);
       final response = await apiService.login(request);
       
+      // Store tokens using auth service
+      await apiService.authService.storeTokens({
+        'access_token': response.accessToken!,
+        'refresh_token': response.refreshToken!,
+        'token_expires_at': DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
+        'refresh_expires_at': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+        'session_id': '', // Will be set by backend if needed
+      });
+      
       // OTP is disabled - always go directly to authenticated state
-      apiService.setAuthToken(response.accessToken!);
       state = AuthState.authenticated(response.user, response.accessToken!);
     } catch (e) {
       state = AuthState.error(e.toString());
@@ -51,8 +112,16 @@ class AuthNotifier extends _$AuthNotifier {
       
       final response = await apiService.register(request);
       
+      // Store tokens using auth service
+      await apiService.authService.storeTokens({
+        'access_token': response.accessToken!,
+        'refresh_token': response.refreshToken!,
+        'token_expires_at': DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
+        'refresh_expires_at': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+        'session_id': '', // Will be set by backend if needed
+      });
+      
       // OTP is disabled - always go directly to authenticated state
-      apiService.setAuthToken(response.accessToken!);
       state = AuthState.authenticated(response.user, response.accessToken!);
     } on EmailAlreadyExistsException catch (e) {
       print('🔴 AuthProvider: Caught EmailAlreadyExistsException with email: ${e.email}');
@@ -64,12 +133,17 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-
-
-  void logout() {
-    final apiService = ref.read(apiServiceProvider);
-    apiService.clearAuthToken();
-    state = const AuthState.initial();
+  void logout() async {
+    try {
+      // Clear stored tokens
+      await _clearStoredTokens();
+      
+      state = const AuthState.initial();
+    } catch (e) {
+      print('🔴 AuthProvider: Error during logout: $e');
+      // Still set to initial state even if clearing fails
+      state = const AuthState.initial();
+    }
   }
 
   void clearError() {
@@ -104,8 +178,6 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   void setAuthenticatedUser(User user, String accessToken) {
-    final apiService = ref.read(apiServiceProvider);
-    apiService.setAuthToken(accessToken);
     state = AuthState.authenticated(user, accessToken);
   }
 }

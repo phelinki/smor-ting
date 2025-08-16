@@ -73,7 +73,7 @@ func (s *MongoDBService) Register(ctx context.Context, req *models.RegisterReque
 		LastName:        req.LastName,
 		Phone:           req.Phone,
 		Role:            req.Role,
-		IsEmailVerified: false,
+		IsEmailVerified: true, // EMAIL VERIFICATION DISABLED: Auto-verify new users for smooth development
 		ProfileImage:    "",
 	}
 

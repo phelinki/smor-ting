@@ -130,11 +130,11 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	clientIP := c.IP()
 	userAgent := c.Get("User-Agent")
 
-    // Ensure device info is non-nil and set client info
-    if req.DeviceInfo == nil {
-        req.DeviceInfo = &models.DeviceFingerprint{}
-    }
-    req.DeviceInfo.Platform = h.extractPlatform(userAgent)
+	// Ensure device info is non-nil and set client info
+	if req.DeviceInfo == nil {
+		req.DeviceInfo = &models.DeviceFingerprint{}
+	}
+	req.DeviceInfo.Platform = h.extractPlatform(userAgent)
 
 	// Check brute force protection
 	if err := h.bruteForceProtector.CheckAllowed(req.Email, clientIP); err != nil {
@@ -300,7 +300,7 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 	)
 
 	// Success - return successful login response
-	return c.Status(http.StatusOK).JSON(EnhancedLoginResponse{
+	response := EnhancedLoginResponse{
 		Success:      authResult.Success,
 		Message:      authResult.Message,
 		User:         authResult.User,
@@ -323,7 +323,19 @@ func (h *EnhancedAuthHandler) EnhancedLogin(c *fiber.Ctx) error {
 		RequiresVerification: authResult.RequiresVerification,
 		RequiresCaptcha:      authResult.RequiresCaptcha,
 		DeviceTrusted:        authResult.DeviceTrusted,
-	})
+	}
+
+	// DEBUG: Log the final response being sent to client
+	h.logger.Info("Enhanced auth handler sending response",
+		zap.String("email", req.Email),
+		zap.Bool("success", response.Success),
+		zap.Bool("requires_two_factor", response.RequiresTwoFactor),
+		zap.Bool("requires_verification", response.RequiresVerification),
+		zap.Bool("requires_captcha", response.RequiresCaptcha),
+		zap.Bool("device_trusted", response.DeviceTrusted),
+	)
+
+	return c.Status(http.StatusOK).JSON(response)
 }
 
 // RefreshToken handles token refresh with session validation

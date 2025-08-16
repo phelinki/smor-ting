@@ -254,11 +254,11 @@ func TestEnhancedAuthService_Authenticate_WithRememberMe(t *testing.T) {
 	}
 }
 
-func TestEnhancedAuthService_Authenticate_RequiresTwoFactor(t *testing.T) {
+func TestEnhancedAuthService_Authenticate_AdminUserNoLongerRequires2FA(t *testing.T) {
 	// Arrange
 	service, _, _ := setupTestService(t)
 	user := createTestUser()
-	user.Role = models.AdminRole // Admin users require 2FA
+	user.Role = models.AdminRole // Admin users no longer require 2FA
 
 	deviceInfo := createTestDeviceInfo()
 	authReq := &AuthRequest{
@@ -277,16 +277,28 @@ func TestEnhancedAuthService_Authenticate_RequiresTwoFactor(t *testing.T) {
 		t.Fatalf("Expected successful authentication, got error: %v", err)
 	}
 
-	if !result.RequiresTwoFactor {
-		t.Error("Expected 2FA to be required for admin user")
+	// 2FA is now disabled for all users, including admin users
+	if result.RequiresTwoFactor {
+		t.Error("Expected 2FA to be disabled for admin user (2FA is now disabled globally)")
 	}
 
-	if result.AccessToken != "" {
-		t.Error("Expected access token to be empty when 2FA is required")
+	// Should get access token immediately since 2FA is disabled
+	if result.AccessToken == "" {
+		t.Error("Expected access token to be provided immediately when 2FA is disabled")
+	}
+
+	// Should get refresh token too
+	if result.RefreshToken == "" {
+		t.Error("Expected refresh token to be provided immediately when 2FA is disabled")
+	}
+
+	// Should have a session ID
+	if result.SessionID == "" {
+		t.Error("Expected session ID to be provided")
 	}
 }
 
-func TestEnhancedAuthService_Authenticate_JailbrokenDevice(t *testing.T) {
+func TestEnhancedAuthService_Authenticate_JailbrokenDevice_2FA_Disabled(t *testing.T) {
 	// Arrange
 	service, _, _ := setupTestService(t)
 	user := createTestUser()
@@ -310,13 +322,22 @@ func TestEnhancedAuthService_Authenticate_JailbrokenDevice(t *testing.T) {
 		t.Fatalf("Expected successful authentication, got error: %v", err)
 	}
 
-	if !result.RequiresTwoFactor {
-		t.Error("Expected 2FA to be required for jailbroken device")
+	// 2FA is globally disabled, so even jailbroken devices don't require it
+	if result.RequiresTwoFactor {
+		t.Error("Expected 2FA to be disabled for jailbroken device (2FA globally disabled)")
 	}
 
-	if result.DeviceTrusted {
-		t.Error("Expected device to be untrusted when jailbroken")
+	// Should still get tokens immediately even for jailbroken devices
+	if result.AccessToken == "" {
+		t.Error("Expected access token to be provided immediately for jailbroken device")
 	}
+
+	if result.RefreshToken == "" {
+		t.Error("Expected refresh token to be provided immediately for jailbroken device")
+	}
+
+	// Device may still be untrusted due to jailbreaking, but this doesn't affect login anymore
+	// (The trust status is informational only when 2FA is disabled)
 }
 
 func TestEnhancedAuthService_RefreshTokenWithSession_Success(t *testing.T) {

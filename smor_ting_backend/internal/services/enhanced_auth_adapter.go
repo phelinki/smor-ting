@@ -42,6 +42,22 @@ func (a *EnhancedAuthServiceAdapter) EnhancedLogin(req *models.EnhancedLoginRequ
 		return &models.EnhancedAuthResult{Success: false, Message: "Invalid email or password"}, nil
 	}
 
+	// EMAIL VERIFICATION DISABLED: Auto-verify users on successful login
+	// This ensures smooth development experience without email verification barriers
+	if !user.IsEmailVerified {
+		user.IsEmailVerified = true
+		// Update user in database to persist the verification status
+		if err := a.repo.UpdateUser(ctx, user); err != nil {
+			a.logger.Warn("Failed to auto-verify user email",
+				zap.String("email", user.Email),
+				zap.Error(err))
+			// Continue with login even if verification update fails
+		} else {
+			a.logger.Info("Auto-verified user email on login",
+				zap.String("email", user.Email))
+		}
+	}
+
 	// Map device info (handle nil)
 	var devInfo DeviceFingerprint
 	if req.DeviceInfo != nil {
@@ -76,7 +92,7 @@ func (a *EnhancedAuthServiceAdapter) EnhancedLogin(req *models.EnhancedLoginRequ
 	}
 
 	// Map to models.EnhancedAuthResult
-	return &models.EnhancedAuthResult{
+	authResult := &models.EnhancedAuthResult{
 		Success:              true,
 		Message:              "Login successful",
 		User:                 result.User,
@@ -86,11 +102,23 @@ func (a *EnhancedAuthServiceAdapter) EnhancedLogin(req *models.EnhancedLoginRequ
 		TokenExpiresAt:       &result.TokenExpiresAt,
 		RefreshExpiresAt:     &result.RefreshExpiresAt,
 		RequiresTwoFactor:    false, // OTP/2FA DISABLED - always return false
-		RequiresVerification: result.RequiresVerification,
+		RequiresVerification: false, // VERIFICATION DISABLED - always return false
 		RequiresCaptcha:      false,
 		DeviceTrusted:        result.DeviceTrusted,
 		IsRestoredSession:    false,
-	}, nil
+	}
+
+	// DEBUG: Log the result to track the issue
+	a.logger.Info("EnhancedAuthServiceAdapter returning result",
+		zap.String("email", req.Email),
+		zap.Bool("success", authResult.Success),
+		zap.Bool("requires_two_factor", authResult.RequiresTwoFactor),
+		zap.Bool("requires_verification", authResult.RequiresVerification),
+		zap.Bool("requires_captcha", authResult.RequiresCaptcha),
+		zap.Bool("device_trusted", authResult.DeviceTrusted),
+	)
+
+	return authResult, nil
 }
 
 func (a *EnhancedAuthServiceAdapter) BiometricLogin(sessionID, biometricData string) (*models.EnhancedAuthResult, error) {

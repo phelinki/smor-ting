@@ -47,16 +47,6 @@ class ApiService {
     _dio.interceptors.add(AuthInterceptor(_authService));
   }
 
-  // MODIFIED: Don't set global headers, let interceptor handle it
-  void setAuthToken(String token) {
-    // Remove this method or make it do nothing
-    // The interceptor will handle adding auth headers per request
-  }
-
-  void clearAuthToken() {
-    // Remove this method or make it do nothing
-  }
-
   // Get auth service for token management
   AuthService get authService => _authService;
 

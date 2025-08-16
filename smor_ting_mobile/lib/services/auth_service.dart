@@ -51,7 +51,7 @@ class AuthService {
       final response = await _apiService.refreshToken(refreshToken, sessionId ?? '');
       
       // Store new tokens
-      await _storeTokens(response);
+      await storeTokens(response);
       
       // Complete the future with new access token
       final newAccessToken = response['access_token'] as String;
@@ -88,7 +88,7 @@ class AuthService {
     }
   }
 
-  Future<void> _storeTokens(Map<String, dynamic> response) async {
+  Future<void> storeTokens(Map<String, dynamic> response) async {
     await Future.wait([
       _secureStorage.write(key: 'access_token', value: response['access_token']),
       _secureStorage.write(key: 'refresh_token', value: response['refresh_token']),

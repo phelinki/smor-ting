@@ -241,14 +241,14 @@ func TestEnhancedAuthService_Generate2FAOTP_Success(t *testing.T) {
 	}
 }
 
-func TestEnhancedAuthService_FullWorkflow_With2FA(t *testing.T) {
+func TestEnhancedAuthService_FullWorkflow_2FA_Disabled(t *testing.T) {
 	// Arrange
 	service, _ := setupTestServiceWith2FA(t)
 	user := createTestUser()
-	user.Role = models.AdminRole // Admin requires 2FA
+	user.Role = models.AdminRole // Admin users no longer require 2FA
 
 	deviceInfo := createTestDeviceInfo()
-	deviceInfo.IsTrusted = false // Untrusted device requires 2FA
+	deviceInfo.IsTrusted = false // Even untrusted devices no longer require 2FA
 
 	authReq := &AuthRequest{
 		Email:      user.Email,
@@ -258,40 +258,40 @@ func TestEnhancedAuthService_FullWorkflow_With2FA(t *testing.T) {
 		UserAgent:  "TestAgent/1.0",
 	}
 
-	// Act - Initial authentication (should require 2FA)
+	// Act - Authentication should complete without requiring 2FA
 	result, err := service.Authenticate(context.Background(), authReq, user)
 	if err != nil {
 		t.Fatalf("Expected successful authentication, got error: %v", err)
 	}
 
-	if !result.RequiresTwoFactor {
-		t.Fatal("Expected 2FA to be required")
-	}
-
-	// Generate 2FA OTP
-	err = service.Generate2FAOTP(context.Background(), user.Email)
-	if err != nil {
-		t.Fatalf("Failed to generate 2FA OTP: %v", err)
-	}
-
-	// Complete authentication with 2FA
-	authReq.TwoFactorCode = "123456"
-	result, err = service.Authenticate(context.Background(), authReq, user)
-
-	// Assert
-	if err != nil {
-		t.Fatalf("Expected successful authentication with 2FA, got error: %v", err)
-	}
-
+	// 2FA is now globally disabled
 	if result.RequiresTwoFactor {
-		t.Error("Expected 2FA requirement to be satisfied")
+		t.Error("Expected 2FA to be disabled globally - should not require 2FA for any user")
 	}
 
+	// Should get tokens immediately without 2FA
 	if result.AccessToken == "" {
-		t.Error("Expected access token to be provided after 2FA")
+		t.Error("Expected access token to be provided immediately (2FA disabled)")
 	}
 
 	if result.RefreshToken == "" {
-		t.Error("Expected refresh token to be provided after 2FA")
+		t.Error("Expected refresh token to be provided immediately (2FA disabled)")
+	}
+
+	if result.SessionID == "" {
+		t.Error("Expected session ID to be provided immediately (2FA disabled)")
+	}
+
+	// Test that even providing a 2FA code doesn't change the behavior
+	authReq.TwoFactorCode = "123456"
+	result2, err := service.Authenticate(context.Background(), authReq, user)
+
+	// Assert - behavior should be the same whether 2FA code is provided or not
+	if err != nil {
+		t.Fatalf("Expected successful authentication even with 2FA code, got error: %v", err)
+	}
+
+	if result2.RequiresTwoFactor {
+		t.Error("Expected 2FA to remain disabled even when 2FA code is provided")
 	}
 }
