@@ -38,10 +38,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) {
       final isAuthenticated = authState is Authenticated;
-      // While auth is in progress, do not redirect to avoid bouncing
+      
+      // While auth is loading, stay on current page
       if (authState is Loading) {
         return null;
       }
+      
+      // If on splash page and auth check is complete (initial state = not authenticated)
+      if (state.matchedLocation == '/' && authState is Initial) {
+        return '/landing';
+      }
+      
       final isAuthRoute = state.matchedLocation == '/landing' || 
                          state.matchedLocation == '/login' || 
                          state.matchedLocation == '/register' ||
@@ -49,7 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                          state.matchedLocation == '/agent-login';
       
       // If not authenticated and not on auth route, redirect to landing
-      if (!isAuthenticated && !isAuthRoute && state.matchedLocation != '/') {
+      if (!isAuthenticated && !isAuthRoute) {
         return '/landing';
       }
       
