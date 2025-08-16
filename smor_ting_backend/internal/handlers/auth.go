@@ -392,6 +392,61 @@ func (h *AuthHandler) ValidateToken(c *fiber.Ctx) error {
 		})
 	}
 
+	// Fetch complete user data from database
+	userObjectID, err := primitive.ObjectIDFromHex(claims.UserID)
+	if err != nil {
+		h.logger.Error("Failed to parse user ID from token", err, zap.String("user_id", claims.UserID))
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "Invalid user ID",
+			"message": "Token contains invalid user identifier",
+		})
+	}
+
+	user, err := h.authService.GetUserByID(c.Context(), userObjectID)
+	if err != nil {
+		h.logger.Error("Failed to fetch user data for token validation", err, zap.String("user_id", claims.UserID))
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "User not found",
+			"message": "User associated with token not found",
+		})
+	}
+
+	// Build complete user object matching mobile app expectations
+	userResponse := fiber.Map{
+		"id":                user.ID.Hex(),
+		"email":             user.Email,
+		"first_name":        user.FirstName,
+		"last_name":         user.LastName,
+		"phone":             user.Phone,
+		"role":              user.Role,
+		"is_email_verified": user.IsEmailVerified,
+		"profile_image":     user.ProfileImage,
+		"created_at":        user.CreatedAt,
+		"updated_at":        user.UpdatedAt,
+	}
+
+	// Add address if it exists
+	if user.Address != nil {
+		userResponse["address"] = fiber.Map{
+			"street":    user.Address.Street,
+			"city":      user.Address.City,
+			"county":    user.Address.County,
+			"country":   user.Address.Country,
+			"latitude":  user.Address.Latitude,
+			"longitude": user.Address.Longitude,
+		}
+	} else {
+		// Provide empty address to match Flutter model expectations
+		userResponse["address"] = fiber.Map{
+			"street":    "",
+			"city":      "",
+			"county":    "",
+			"country":   "",
+			"latitude":  0.0,
+			"longitude": 0.0,
+		}
+	}
+
 	// Get token information
 	tokenInfo, err := h.jwtService.GetTokenInfo(token, false)
 	if err != nil {
@@ -403,17 +458,13 @@ func (h *AuthHandler) ValidateToken(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Token is valid",
-		"data": fiber.Map{
-			"user_id":    claims.UserID,
-			"email":      claims.Email,
-			"role":       claims.Role,
-			"token_info": tokenInfo,
-			"permissions": fiber.Map{
-				"is_customer": claims.Role == string(models.CustomerRole),
-				"is_provider": claims.Role == string(models.ProviderRole),
-				"is_admin":    claims.Role == string(models.AdminRole),
-			},
+		"message":    "Token is valid",
+		"user":       userResponse, // Return complete user data
+		"token_info": tokenInfo,
+		"permissions": fiber.Map{
+			"is_customer": claims.Role == string(models.CustomerRole),
+			"is_provider": claims.Role == string(models.ProviderRole),
+			"is_admin":    claims.Role == string(models.AdminRole),
 		},
 	})
 }

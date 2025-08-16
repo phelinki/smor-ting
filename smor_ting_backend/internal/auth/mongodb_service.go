@@ -227,6 +227,11 @@ func (s *MongoDBService) GetUserByEmail(ctx context.Context, email string) (*mod
 	return s.repository.GetUserByEmail(ctx, email)
 }
 
+// GetUserByID returns a user by ID
+func (s *MongoDBService) GetUserByID(ctx context.Context, userID primitive.ObjectID) (*models.User, error) {
+	return s.repository.GetUserByID(ctx, userID)
+}
+
 // RequestPasswordReset creates a password reset OTP and (optionally) triggers email by caller
 func (s *MongoDBService) RequestPasswordReset(ctx context.Context, email string) error {
 	// Ensure user exists (avoid leaking existence via error message details)
