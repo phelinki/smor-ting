@@ -54,7 +54,11 @@ class AuthService {
       await storeTokens(response);
       
       // Complete the future with new access token
-      final newAccessToken = response['access_token'] as String;
+      final newAccessToken = response['access_token'] as String?;
+      if (newAccessToken == null) {
+        throw Exception('No access token in refresh response');
+      }
+      
       _refreshCompleter!.complete(newAccessToken);
       return newAccessToken;
       
@@ -89,20 +93,27 @@ class AuthService {
   }
 
   Future<void> storeTokens(Map<String, dynamic> response) async {
+    final accessToken = response['access_token'] as String?;
+    final refreshTokenValue = response['refresh_token'] as String?;
+    
+    if (accessToken == null || refreshTokenValue == null) {
+      throw Exception('Invalid token response: missing required tokens');
+    }
+    
     await Future.wait([
-      _secureStorage.write(key: 'access_token', value: response['access_token']),
-      _secureStorage.write(key: 'refresh_token', value: response['refresh_token']),
+      _secureStorage.write(key: 'access_token', value: accessToken),
+      _secureStorage.write(key: 'refresh_token', value: refreshTokenValue),
       _secureStorage.write(
         key: 'refresh_expires_at', 
-        value: response['refresh_expires_at']
+        value: response['refresh_expires_at'] as String? ?? ''
       ),
       _secureStorage.write(
         key: 'token_expires_at', 
-        value: response['token_expires_at']
+        value: response['token_expires_at'] as String? ?? ''
       ),
       _secureStorage.write(
         key: 'session_id', 
-        value: response['session_id'] ?? ''
+        value: response['session_id'] as String? ?? ''
       ),
     ]);
   }
