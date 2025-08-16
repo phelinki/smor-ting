@@ -44,6 +44,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
       
+      // If authenticated user is on splash page, redirect based on role
+      if (state.matchedLocation == '/' && isAuthenticated) {
+        final userRole = authState.user.role;
+        if (userRole == UserRole.provider || userRole == UserRole.admin) {
+          return '/agent-dashboard';
+        }
+        return '/home';
+      }
+      
       // If on splash page and auth check is complete (initial state = not authenticated)
       if (state.matchedLocation == '/' && authState is Initial) {
         return '/landing';
