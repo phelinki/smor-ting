@@ -72,17 +72,22 @@ class _SplashPageState extends ConsumerState<SplashPage>
     try {
       print('🔵 SplashPage: Starting app initialization...');
       
-      // Initialize auth state - this will check for stored tokens and restore session
+      // Initialize auth state
       final authNotifier = ref.read(authNotifierProvider.notifier);
       await authNotifier.initializeAuthState();
       
       print('🔵 SplashPage: Auth initialization complete');
       
-      // Give the app time to stabilize
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Add a small delay to ensure state is fully updated
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Check if widget is still mounted before navigation
+      if (!mounted) return;
       
       // Force navigation based on auth state
       final authState = ref.read(authNotifierProvider);
+      print('🔵 SplashPage: Current auth state: ${authState.runtimeType}');
+      
       if (authState is Authenticated) {
         final userRole = authState.user.role;
         if (userRole == UserRole.provider || userRole == UserRole.admin) {
@@ -91,14 +96,16 @@ class _SplashPageState extends ConsumerState<SplashPage>
           context.go('/home');
         }
       } else {
+        // User is not authenticated, go to landing
         context.go('/landing');
       }
       
       print('🔵 SplashPage: Navigation triggered');
     } catch (e) {
       print('🔴 SplashPage: Error during initialization: $e');
-      // On error, go to landing page
-      context.go('/landing');
+      if (mounted) {
+        context.go('/landing');
+      }
     }
   }
 
