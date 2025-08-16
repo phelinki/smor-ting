@@ -729,11 +729,19 @@ func (a *App) getUserProfile(c *fiber.Ctx) error {
 			"message": "User not found in context",
 		})
 	}
+
+	// Return complete user object matching mobile app expectations
 	return c.JSON(fiber.Map{
-		"message": "User profile endpoint",
-		"user_id": user.ID.Hex(),
-		"email":   user.Email,
-		"role":    user.Role,
+		"id":                user.ID.Hex(),
+		"email":             user.Email,
+		"first_name":        user.FirstName,
+		"last_name":         user.LastName,
+		"phone":             user.Phone,
+		"role":              user.Role,
+		"is_email_verified": user.IsEmailVerified,
+		"profile_image":     user.ProfileImage,
+		"created_at":        user.CreatedAt,
+		"updated_at":        user.UpdatedAt,
 	})
 }
 

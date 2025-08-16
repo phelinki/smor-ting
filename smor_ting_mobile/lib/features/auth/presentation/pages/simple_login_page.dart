@@ -42,9 +42,11 @@ class _SimpleLoginPageState extends ConsumerState<SimpleLoginPage> {
         _passwordController.text,
       );
 
-      if (mounted) {
-        context.go('/home');
-      }
+      // Remove this manual navigation - let the router handle it
+      // if (mounted) {
+      //   context.go('/home');
+      // }
+      
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
