@@ -9,6 +9,7 @@ part 'auth_provider.g.dart';
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
   final _secureStorage = const FlutterSecureStorage();
+  bool _isInitializing = false; // Add this guard
   
   @override
   AuthState build() {
@@ -20,10 +21,17 @@ class AuthNotifier extends _$AuthNotifier {
   /// Initialize auth state by checking for stored tokens
   /// This should be called from the splash page
   Future<void> initializeAuthState() async {
+    // Prevent multiple simultaneous initialization attempts
+    if (_isInitializing) {
+      print('🟡 AuthProvider: Initialization already in progress, skipping...');
+      return;
+    }
+    
+    _isInitializing = true;
+    
     try {
       print('🔵 AuthProvider: Checking for stored authentication tokens...');
       
-      // Check if we have stored tokens
       final accessToken = await _secureStorage.read(key: 'access_token');
       final refreshToken = await _secureStorage.read(key: 'refresh_token');
       final sessionId = await _secureStorage.read(key: 'session_id');
@@ -40,17 +48,19 @@ class AuthNotifier extends _$AuthNotifier {
       final apiService = ref.read(apiServiceProvider);
       final validToken = await apiService.authService.getValidToken();
       
-      // Fetch user profile to restore full auth state
-      final user = await apiService.getUserProfile();
-      
-      print('🔵 AuthProvider: Successfully restored authentication state for user: ${user.email}');
-      state = AuthState.authenticated(user, validToken);
+      // Only fetch user profile if we don't already have one
+      if (state is! Authenticated) {
+        final user = await apiService.getUserProfile();
+        print('🔵 AuthProvider: Successfully restored authentication state for user: ${user.email}');
+        state = AuthState.authenticated(user, validToken);
+      }
       
     } catch (e) {
       print('🔴 AuthProvider: Failed to restore auth state: $e');
-      // Clear invalid tokens
       await _clearStoredTokens();
       state = const AuthState.initial();
+    } finally {
+      _isInitializing = false; // Always reset the guard
     }
   }
 
@@ -79,12 +89,16 @@ class AuthNotifier extends _$AuthNotifier {
         'refresh_token': response.refreshToken!,
         'token_expires_at': DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
         'refresh_expires_at': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
-        'session_id': '', // Will be set by backend if needed
+        'session_id': response.sessionId ?? '',
       });
       
-      // OTP is disabled - always go directly to authenticated state
+      // Set authenticated state - GoRouter will handle navigation
       state = AuthState.authenticated(response.user, response.accessToken!);
+      
+      print('🟢 Login successful for user: ${response.user.email}');
+      
     } catch (e) {
+      print('🔴 Login failed: $e');
       state = AuthState.error(e.toString());
     }
   }

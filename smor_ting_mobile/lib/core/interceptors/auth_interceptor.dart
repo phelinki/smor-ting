@@ -6,6 +6,7 @@ class AuthInterceptor extends Interceptor {
   
   // Track ongoing refresh to prevent multiple simultaneous refreshes
   static bool _isRefreshing = false;
+  static bool _isInitializing = false; // Add this
   
   AuthInterceptor(this._authService);
 
@@ -15,23 +16,24 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     // CRITICAL: Skip auth for these endpoints to prevent infinite loops
-    if (_isAuthEndpoint(options.path)) {
+    if (_isAuthEndpoint(options.path) || _isInitializing) {
       return handler.next(options);
     }
     
     try {
-      // Only try to get token if we're not refreshing and have stored credentials
-      final token = await _authService.getValidToken();
-      if (token.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $token';
+      // Only try to get token if we're not refreshing
+      if (!_isRefreshing) {
+        final token = await _authService.getValidToken();
+        if (token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
       }
     } catch (e) {
       // No valid token available - continue without auth header
-      // This is normal for first-time users or expired sessions
       print('No valid token available, proceeding without auth: $e');
     }
     
-    return handler.next(options);
+    handler.next(options);
   }
 
   @override
@@ -79,6 +81,11 @@ class AuthInterceptor extends Interceptor {
     ];
     
     return authPaths.any((authPath) => path.contains(authPath));
+  }
+
+  // Add method to set initialization state
+  static void setInitializing(bool value) {
+    _isInitializing = value;
   }
 
   /// Reset refresh state for testing
